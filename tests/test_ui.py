@@ -51,3 +51,11 @@ def test_catalog_entries_have_url_and_keys() -> None:
     entries = {e["name"]: e for e in ui.platform_catalog([])}
     assert entries["Bybit"]["url"] == "https://bybit.com" and entries["Bybit"]["logo"] is None
     assert "okex" in entries["OKX"]["keys"]  # type: ignore[operator]
+
+
+def test_apple_platforms() -> None:
+    assert ui.platform_logo("Apple") == "apple"
+    assert ui.platform_logo("apple id") == "apple"
+    assert ui.platform_logo("苹果") == "apple"
+    assert ui.platform_logo("App Store") == "appstore"
+    assert ui.platform_logo("账号", "https://appleid.apple.com/") == "apple"

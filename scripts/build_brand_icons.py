@@ -73,6 +73,8 @@ SOURCES: dict[str, tuple[str, str]] = {
     "github": ("logos", "github-icon"),
     "twitch": ("logos", "twitch"),
     "spotify": ("logos", "spotify-icon"),
+    "apple": ("logos", "apple"),
+    "appstore": ("logos", "apple-app-store"),
     "medium": ("logos", "medium-icon"),
     "quora": ("si", "quora"),
     # crypto

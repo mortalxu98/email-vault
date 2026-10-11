@@ -156,6 +156,9 @@ PLATFORMS: tuple[Platform, ...] = (
     Platform("Slack", "other", ("slack.com",), (), "slack"),
     Platform("GitHub", "other", ("github.com",), (), "github"),
     Platform("Spotify", "other", ("spotify.com",), (), "spotify"),
+    Platform("Apple ID", "other", ("account.apple.com", "appleid.apple.com", "apple.com"), ("apple", "苹果", "苹果账号", "appleaccount"), "apple"),
+    Platform("App Store", "other", ("apps.apple.com",), ("appstore", "苹果商店"), "appstore"),
+    Platform("iCloud", "other", ("icloud.com",), (), "icloud"),
 )
 # fmt: on
 
