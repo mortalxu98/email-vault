@@ -74,10 +74,13 @@ def test_icloud_mail_uses_apple_logo() -> None:
         assert ui.provider(address).logo == "apple"
 
 
-def test_meta_family() -> None:
-    assert ui.platform_logo("Meta") == "meta"
-    assert ui.platform_logo("某账号", "https://accountscenter.meta.com/") == "meta"
-    assert ui.platform_logo("Meta AI") == "metaai"
-    assert ui.platform_logo("某账号", "https://www.meta.ai/") == "metaai"
-    assert ui.platform_logo("Messenger") == "messenger"
-    assert ui.platform_logo("脸书") == "facebook"
+def test_meta_family_shares_one_logo() -> None:
+    for name in ("Meta", "Meta AI", "Messenger", "Llama"):
+        assert ui.platform_logo(name) == "meta", name
+    for url in (
+        "https://accountscenter.meta.com/",
+        "https://www.meta.ai/",
+        "https://messenger.com",
+    ):
+        assert ui.platform_logo("某账号", url) == "meta", url
+    assert ui.platform_logo("脸书") == "facebook"  # Facebook keeps its own logo

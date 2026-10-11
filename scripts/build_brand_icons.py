@@ -75,8 +75,6 @@ SOURCES: dict[str, tuple[str, str]] = {
     "apple": ("logos", "apple"),
     "google": ("logos", "google-icon"),
     "meta": ("logos", "meta-icon"),
-    "metaai": ("si", "metaai"),
-    "messenger": ("si", "messenger"),
     "medium": ("logos", "medium-icon"),
     "quora": ("si", "quora"),
     # crypto
