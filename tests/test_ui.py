@@ -72,3 +72,12 @@ def test_google_account_vs_google_products() -> None:
 def test_icloud_mail_uses_apple_logo() -> None:
     for address in ("a@icloud.com", "a@me.com", "a@mac.com"):
         assert ui.provider(address).logo == "apple"
+
+
+def test_meta_family() -> None:
+    assert ui.platform_logo("Meta") == "meta"
+    assert ui.platform_logo("某账号", "https://accountscenter.meta.com/") == "meta"
+    assert ui.platform_logo("Meta AI") == "metaai"
+    assert ui.platform_logo("某账号", "https://www.meta.ai/") == "metaai"
+    assert ui.platform_logo("Messenger") == "messenger"
+    assert ui.platform_logo("脸书") == "facebook"

@@ -103,6 +103,7 @@ PLATFORMS: tuple[Platform, ...] = (
     Platform("Suno", "ai", ("suno.com", "suno.ai"), (), "suno"),
     Platform("Replicate", "ai", ("replicate.com",), (), "replicate"),
     Platform("Ollama", "ai", ("ollama.com",), (), "ollama"),
+    Platform("Meta AI", "ai", ("meta.ai",), ("metaai", "llama"), "metaai"),
     Platform("Grok", "ai", ("grok.com",), ("xai",)),
     Platform("Runway", "ai", ("runwayml.com",), ("runwayml",)),
     Platform("Character.AI", "ai", ("character.ai",), ("characterai", "c.ai")),
@@ -111,7 +112,9 @@ PLATFORMS: tuple[Platform, ...] = (
     # social
     Platform("X", "social", ("x.com", "twitter.com"), ("twitter", "推特"), "x"),
     Platform("Instagram", "social", ("instagram.com",), ("ins", "ig"), "instagram"),
-    Platform("Facebook", "social", ("facebook.com",), ("fb",), "facebook"),
+    Platform("Facebook", "social", ("facebook.com",), ("fb", "脸书"), "facebook"),
+    Platform("Meta", "social", ("accountscenter.meta.com", "meta.com"), ("meta账号", "metaaccount", "accountscenter", "账户中心"), "meta"),
+    Platform("Messenger", "social", ("messenger.com",), ("fbmessenger",), "messenger"),
     Platform("Threads", "social", ("threads.net", "threads.com"), (), "threads"),
     Platform("Reddit", "social", ("reddit.com",), (), "reddit"),
     Platform("YouTube", "social", ("youtube.com",), ("油管",), "youtube"),
@@ -162,7 +165,7 @@ PLATFORMS: tuple[Platform, ...] = (
 # fmt: on
 
 # Horizontal marks that need more of the avatar to stay legible.
-WIDE_LOGOS = frozenset({"okx"})
+WIDE_LOGOS = frozenset({"okx", "meta"})
 
 _BY_NAME = {_norm(a): p for p in PLATFORMS for a in (p.name, *p.aliases)}
 _BY_DOMAIN = {d: p for p in PLATFORMS for d in p.domains}
