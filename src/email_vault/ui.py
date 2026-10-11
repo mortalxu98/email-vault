@@ -156,9 +156,8 @@ PLATFORMS: tuple[Platform, ...] = (
     Platform("Slack", "other", ("slack.com",), (), "slack"),
     Platform("GitHub", "other", ("github.com",), (), "github"),
     Platform("Spotify", "other", ("spotify.com",), (), "spotify"),
-    Platform("Apple ID", "other", ("account.apple.com", "appleid.apple.com", "apple.com"), ("apple", "苹果", "苹果账号", "appleaccount"), "apple"),
-    Platform("App Store", "other", ("apps.apple.com",), ("appstore", "苹果商店"), "appstore"),
-    Platform("iCloud", "other", ("icloud.com",), (), "icloud"),
+    Platform("Apple", "other", ("apple.com", "icloud.com"), ("appleid", "appleaccount", "苹果", "苹果账号", "appstore", "苹果商店", "icloud"), "apple"),
+    Platform("Google", "other", ("accounts.google.com", "google.com"), ("googleaccount", "google账号", "谷歌", "谷歌账号"), "google"),
 )
 # fmt: on
 

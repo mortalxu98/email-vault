@@ -53,9 +53,17 @@ def test_catalog_entries_have_url_and_keys() -> None:
     assert "okex" in entries["OKX"]["keys"]  # type: ignore[operator]
 
 
-def test_apple_platforms() -> None:
-    assert ui.platform_logo("Apple") == "apple"
-    assert ui.platform_logo("apple id") == "apple"
-    assert ui.platform_logo("苹果") == "apple"
-    assert ui.platform_logo("App Store") == "appstore"
+def test_apple_platforms_share_one_logo() -> None:
+    for name in ("Apple", "apple id", "苹果", "App Store", "iCloud"):
+        assert ui.platform_logo(name) == "apple", name
     assert ui.platform_logo("账号", "https://appleid.apple.com/") == "apple"
+    assert ui.platform_logo("某账号", "https://apps.apple.com/") == "apple"
+
+
+def test_google_account_vs_google_products() -> None:
+    assert ui.platform_logo("Google") == "google"
+    assert ui.platform_logo("谷歌账号") == "google"
+    assert ui.platform_logo("账号", "https://accounts.google.com/") == "google"
+    assert (
+        ui.platform_logo("某账号", "https://gemini.google.com/") == "gemini"
+    )  # most specific host wins
