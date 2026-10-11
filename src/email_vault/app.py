@@ -192,6 +192,7 @@ def create_app(
                 "selected": selected,
                 "accounts": accounts,
                 "results": results,
+                "catalog": ui.platform_catalog(store.distinct_platforms()),
                 "q": q,
                 "err": err,
                 "msg": msg,

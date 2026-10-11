@@ -94,7 +94,8 @@ def test_email_page_lists_its_services(unlocked: TestClient) -> None:
     add_account(unlocked, a, "Instagram", category="social")
     add_account(unlocked, b, "Gemini", category="ai")
     page = unlocked.get(f"/?email_id={a}").text
-    assert "ChatGPT" in page and "Instagram" in page and "Gemini" not in page
+    cards = page.split('id="platform-catalog"')[0]  # the autocomplete catalog lists every platform
+    assert "ChatGPT" in cards and "Instagram" in cards and "Gemini" not in cards
 
 
 def test_search_by_platform_finds_emails(unlocked: TestClient) -> None:
@@ -216,3 +217,14 @@ def test_same_origin_post_allowed(unlocked: TestClient) -> None:
 def test_referrer_policy_keeps_origin_header(client: TestClient) -> None:
     # "no-referrer" makes browsers send `Origin: null`, which the origin guard rejects.
     assert client.get("/setup").headers["referrer-policy"] == "same-origin"
+
+
+def test_catalog_includes_users_own_platforms(unlocked: TestClient) -> None:
+    eid = add_email(unlocked, "a@gmail.com")
+    add_account(unlocked, eid, "My Private Forum", category="other", url="forum.example.org")
+    add_account(unlocked, eid, "chatgpt", category="ai")  # known platform: not duplicated
+    page = unlocked.get(f"/?email_id={eid}").text
+    catalog = page.split('id="platform-catalog">')[1].split("</script>")[0]
+    assert '"name": "My Private Forum"' in catalog and '"mine": true' in catalog
+    assert catalog.count('"name": "ChatGPT"') == 1 and '"name": "chatgpt"' not in catalog
+    assert '"name": "Bybit"' in catalog

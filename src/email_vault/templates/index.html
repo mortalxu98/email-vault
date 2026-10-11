@@ -196,7 +196,14 @@
     </div>
     <input type="hidden" name="email_id">
     <div class="form-row">
-      <label>平台名称 <input type="text" name="platform" required placeholder="ChatGPT / Claude / X …"></label>
+      <label>平台名称
+        <span class="combo">
+          <input type="text" name="platform" required placeholder="输入关键字，如 B → Bybit / Bitget"
+                 autocomplete="off" spellcheck="false" data-platform-input
+                 role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="platform-suggest">
+          <ul class="suggest" id="platform-suggest" role="listbox" hidden></ul>
+        </span>
+      </label>
       <label>分类
         <select name="category">
           {% for value, label in categories.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
@@ -219,4 +226,5 @@
     </div>
   </form>
 </dialog>
+<script type="application/json" id="platform-catalog">{{ catalog | tojson }}</script>
 {% endblock %}

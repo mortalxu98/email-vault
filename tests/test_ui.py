@@ -36,11 +36,18 @@ def test_platform_logo_matching() -> None:
 
 def test_every_platform_logo_has_a_symbol() -> None:
     icons = BRAND_ICONS.read_text()
-    for key in ui._PLATFORMS:
-        assert f'id="brand-{key}"' in icons, key
+    for p in ui.PLATFORMS:
+        if p.logo:
+            assert f'id="brand-{p.logo}"' in icons, p.name
 
 
 def test_crypto_platforms() -> None:
     assert ui.platform_logo("OKEx") == "okx"
     assert ui.platform_logo("欧易") == "okx"
     assert ui.platform_logo("交易所", "https://www.binance.com/zh-CN") == "binance"
+
+
+def test_catalog_entries_have_url_and_keys() -> None:
+    entries = {e["name"]: e for e in ui.platform_catalog([])}
+    assert entries["Bybit"]["url"] == "https://bybit.com" and entries["Bybit"]["logo"] is None
+    assert "okex" in entries["OKX"]["keys"]  # type: ignore[operator]

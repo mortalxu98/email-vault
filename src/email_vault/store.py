@@ -237,6 +237,15 @@ class Store:
             ).fetchall()
         return [_account(r) for r in rows]
 
+    def distinct_platforms(self) -> list[tuple[str, str, str]]:
+        """(platform, category, url) per platform name, from its most recent account."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                """SELECT platform, category, url, MAX(id)
+                   FROM accounts GROUP BY lower(platform) ORDER BY platform COLLATE NOCASE"""
+            ).fetchall()
+        return [(r["platform"], r["category"], r["url"]) for r in rows]
+
     def get_account(self, account_id: int) -> Account | None:
         with self._connect() as conn:
             row = conn.execute(

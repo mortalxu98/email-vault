@@ -65,6 +65,10 @@
       input.placeholder = btn.dataset.passwordHint ?? "";
     }
     for (const toggle of form.querySelectorAll("[data-toggle-password]")) setIcon(toggle, "eye");
+    for (const input of form.querySelectorAll("[data-platform-input]")) {
+      closeSuggest(input);
+      delete input.dataset.autoUrl;
+    }
     dialog.showModal();
     form.querySelector("input:not([type=hidden])")?.focus();
   }
@@ -132,6 +136,147 @@
     const message = event.target.dataset.confirm;
     if (message && !confirm(message)) event.preventDefault();
   });
+
+  // ---- platform autocomplete ---------------------------------------------
+
+  const SUGGEST_LIMIT = 8;
+  const catalogEl = document.getElementById("platform-catalog");
+  const catalog = catalogEl ? JSON.parse(catalogEl.textContent) : [];
+  const norm = (text) => text.toLowerCase().replace(/\s+/g, "");
+
+  // 0: name prefix, 1: alias prefix, 2: substring anywhere; null: no match.
+  function score(entry, q) {
+    const name = norm(entry.name);
+    if (name.startsWith(q)) return 0;
+    if (entry.keys.some((k) => k.startsWith(q))) return 1;
+    if (entry.keys.some((k) => k.includes(q))) return 2;
+    return null;
+  }
+
+  function matches(query) {
+    const q = norm(query);
+    if (!q) return [];
+    return catalog
+      .map((entry) => ({ entry, s: score(entry, q) }))
+      // A single character only matches name prefixes; aliases are too noisy there.
+      .filter((m) => m.s !== null && (q.length > 1 || m.s === 0))
+      .sort((a, b) => a.s - b.s || Number(!a.entry.mine) - Number(!b.entry.mine) ||
+        a.entry.name.localeCompare(b.entry.name))
+      .slice(0, SUGGEST_LIMIT)
+      .map((m) => m.entry);
+  }
+
+  function svgUse(href) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("aria-hidden", "true");
+    const use = document.createElementNS(ns, "use");
+    use.setAttribute("href", href);
+    svg.append(use);
+    return svg;
+  }
+
+  function suggestItem(entry, form) {
+    const li = document.createElement("li");
+    li.setAttribute("role", "option");
+    const avatar = document.createElement("span");
+    if (entry.logo) {
+      avatar.className = "avatar sm logo";
+      avatar.append(svgUse(`#brand-${entry.logo}`));
+    } else {
+      avatar.className = "avatar sm av-plain";
+      avatar.textContent = entry.name.slice(0, 1).toUpperCase();
+    }
+    const name = document.createElement("span");
+    name.className = "suggest-name";
+    name.textContent = entry.name;
+    const tag = document.createElement("span");
+    tag.className = `tag tag-${entry.category}`;
+    tag.textContent =
+      form.elements.category?.querySelector(`option[value="${entry.category}"]`)?.textContent ??
+      entry.category;
+    const host = document.createElement("span");
+    host.className = "suggest-host";
+    host.textContent = entry.mine ? "已用过" : entry.url.replace(/^https?:\/\//, "");
+    li.append(avatar, name, tag, host);
+    return li;
+  }
+
+  function closeSuggest(input) {
+    const list = document.getElementById(input.getAttribute("aria-controls"));
+    list.hidden = true;
+    list.replaceChildren();
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+  }
+
+  function setActive(list, index) {
+    const items = [...list.children];
+    if (!items.length) return;
+    const next = (index + items.length) % items.length;
+    items.forEach((li, i) => li.classList.toggle("active", i === next));
+    items[next].scrollIntoView({ block: "nearest" });
+    list.dataset.active = String(next);
+  }
+
+  function pick(input, entry) {
+    const form = input.form;
+    input.value = entry.name;
+    if (form.elements.category) form.elements.category.value = entry.category;
+    const url = form.elements.url;
+    // Fill the URL unless the user typed their own.
+    if (url && (!url.value || url.value === input.dataset.autoUrl)) {
+      url.value = entry.url;
+      input.dataset.autoUrl = entry.url;
+    }
+    closeSuggest(input);
+  }
+
+  function openSuggest(input) {
+    const list = document.getElementById(input.getAttribute("aria-controls"));
+    const found = matches(input.value);
+    list.replaceChildren();
+    if (!found.length) {
+      closeSuggest(input);
+      return;
+    }
+    for (const entry of found) {
+      const li = suggestItem(entry, input.form);
+      li.addEventListener("mousedown", (event) => {
+        event.preventDefault(); // keep focus in the input
+        pick(input, entry);
+      });
+      list.append(li);
+    }
+    list._entries = found;
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+    setActive(list, 0);
+  }
+
+  for (const input of document.querySelectorAll("[data-platform-input]")) {
+    const list = document.getElementById(input.getAttribute("aria-controls"));
+    input.addEventListener("input", () => openSuggest(input));
+    input.addEventListener("blur", () => closeSuggest(input));
+    input.addEventListener("keydown", (event) => {
+      if (list.hidden) {
+        if (event.key === "ArrowDown") openSuggest(input);
+        return;
+      }
+      const active = Number(list.dataset.active ?? 0);
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        setActive(list, active + (event.key === "ArrowDown" ? 1 : -1));
+      } else if (event.key === "Enter" || event.key === "Tab") {
+        if (event.key === "Enter") event.preventDefault();
+        pick(input, list._entries[active]);
+      } else if (event.key === "Escape") {
+        event.preventDefault(); // close the list, not the dialog
+        event.stopPropagation();
+        closeSuggest(input);
+      }
+    });
+  }
 
   // Drop one-shot flash params from the URL and fade the banners.
   const url = new URL(location.href);

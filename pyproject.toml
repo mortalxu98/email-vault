@@ -42,3 +42,5 @@ strict = true
 # Interpolated fragments are module constants; all values are bound parameters.
 "src/email_vault/store.py" = ["S608"]
 "tests/*" = ["S105", "S106"]
+# Platform catalog is a one-row-per-entry table.
+"src/email_vault/ui.py" = ["E501"]
