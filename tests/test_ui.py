@@ -67,3 +67,8 @@ def test_google_account_vs_google_products() -> None:
     assert (
         ui.platform_logo("某账号", "https://gemini.google.com/") == "gemini"
     )  # most specific host wins
+
+
+def test_icloud_mail_uses_apple_logo() -> None:
+    for address in ("a@icloud.com", "a@me.com", "a@mac.com"):
+        assert ui.provider(address).logo == "apple"

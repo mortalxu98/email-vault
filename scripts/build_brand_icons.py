@@ -25,7 +25,6 @@ SOURCES: dict[str, tuple[str, str]] = {
     "gmail": ("logos", "google-gmail"),
     "microsoft": ("logos", "microsoft-icon"),
     "proton": ("si", "protonmail"),
-    "icloud": ("si", "icloud"),
     "qq": ("si", "qq"),
     # AI
     "openai": ("logos", "openai-icon"),
