@@ -321,6 +321,7 @@ button.block { width: 100%; }
 .avatar.lg { width: 64px; height: 64px; border-radius: 16px; font-size: 28px; }
 .avatar.logo { background: #fff; border: 1px solid var(--border); }
 .avatar.logo svg { width: 60%; height: 60%; }
+.avatar.logo.wide svg { width: 84%; height: 84%; }
 @media (prefers-color-scheme: dark) {
   .avatar.logo { background: #f4f5f7; border-color: transparent; }
 }
@@ -430,10 +431,12 @@ button.block { width: 100%; }
 .tag { display: inline-block; margin-top: 2px; padding: 0 8px; border-radius: 6px; font-size: 11.5px; font-weight: 500; line-height: 20px; }
 .tag-ai { background: #ede9fe; color: #6d28d9; }
 .tag-social { background: #e0f2fe; color: #0369a1; }
+.tag-crypto { background: #fef3c7; color: #b45309; }
 .tag-other { background: #f1f5f9; color: #475569; }
 @media (prefers-color-scheme: dark) {
   .tag-ai { background: #2e1f5e; color: #c4b5fd; }
   .tag-social { background: #0c2d44; color: #7dd3fc; }
+  .tag-crypto { background: #3a2a0c; color: #fcd34d; }
   .tag-other { background: #23262d; color: #a1a8b5; }
 }
 

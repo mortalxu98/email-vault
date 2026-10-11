@@ -6,7 +6,7 @@
   <header class="svc-head">
     {% set logo = platform_logo(a.platform, a.url) %}
     {% if logo %}
-    <span class="avatar logo"><svg aria-hidden="true"><use href="#brand-{{ logo }}"/></svg></span>
+    <span class="avatar logo{{ ' wide' if logo in wide_logos }}"><svg aria-hidden="true"><use href="#brand-{{ logo }}"/></svg></span>
     {% else %}
     <span class="avatar av-{{ a.platform | color_index }}">{{ a.platform[:1] | upper }}</span>
     {% endif %}

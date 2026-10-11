@@ -22,7 +22,12 @@ PACKAGE_DIR = Path(__file__).parent
 SESSION_COOKIE = "ev_session"
 MIN_MASTER_PASSWORD_LEN = 8
 UNLOCK_FAILURE_DELAY = 1.0
-CATEGORIES: dict[str, str] = {"ai": "AI 工具", "social": "社交", "other": "其他"}
+CATEGORIES: dict[str, str] = {
+    "ai": "AI 工具",
+    "social": "社交",
+    "crypto": "加密货币",
+    "other": "其他",
+}
 
 FormStr = Annotated[str, Form()]
 
@@ -65,6 +70,7 @@ def create_app(
     templates.env.filters["color_index"] = ui.color_index
     templates.env.filters["split_address"] = ui.split_address
     templates.env.globals["platform_logo"] = ui.platform_logo
+    templates.env.globals["wide_logos"] = ui.WIDE_LOGOS
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(allowed_hosts))

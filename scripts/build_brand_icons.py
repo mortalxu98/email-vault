@@ -75,6 +75,13 @@ SOURCES: dict[str, tuple[str, str]] = {
     "spotify": ("logos", "spotify-icon"),
     "medium": ("logos", "medium-icon"),
     "quora": ("si", "quora"),
+    # crypto
+    "okx": ("si", "okx"),
+    "binance": ("si", "binance"),
+    "kraken": ("logos", "kraken"),
+    "kucoin": ("si", "kucoin"),
+    "metamask": ("logos", "metamask-icon"),
+    "trezor": ("si", "trezor"),
 }
 
 

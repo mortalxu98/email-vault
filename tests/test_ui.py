@@ -38,3 +38,9 @@ def test_every_platform_logo_has_a_symbol() -> None:
     icons = BRAND_ICONS.read_text()
     for key in ui._PLATFORMS:
         assert f'id="brand-{key}"' in icons, key
+
+
+def test_crypto_platforms() -> None:
+    assert ui.platform_logo("OKEx") == "okx"
+    assert ui.platform_logo("欧易") == "okx"
+    assert ui.platform_logo("交易所", "https://www.binance.com/zh-CN") == "binance"

@@ -109,7 +109,16 @@ _PLATFORMS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "spotify": (("spotify",), ("spotify.com",)),
     "medium": (("medium",), ("medium.com",)),
     "quora": (("quora",), ("quora.com",)),
+    "okx": (("okx", "okex", "欧易"), ("okx.com", "okex.com")),
+    "binance": (("binance", "币安"), ("binance.com",)),
+    "kraken": (("kraken",), ("kraken.com",)),
+    "kucoin": (("kucoin", "库币"), ("kucoin.com",)),
+    "metamask": (("metamask", "小狐狸"), ("metamask.io",)),
+    "trezor": (("trezor",), ("trezor.io",)),
 }
+# Horizontal marks that need more of the avatar to stay legible.
+WIDE_LOGOS = frozenset({"okx"})
+
 _PLATFORM_BY_NAME = {name: key for key, (names, _) in _PLATFORMS.items() for name in names}
 _PLATFORM_BY_DOMAIN = {d: key for key, (_, domains) in _PLATFORMS.items() for d in domains}
 

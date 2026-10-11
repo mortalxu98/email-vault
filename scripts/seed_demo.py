@@ -89,6 +89,11 @@ DEMO: list[tuple[str, str, list[tuple[str, str, str, str, str, bool]]]] = [
         "Apple ID",
         [
             ("Mastodon", "social", "@alexc@mastodon.social", "mastodon.social", "", True),
+            ("OKX", "crypto", "", "okx.com", "已 KYC，资金密码另存", True),
+            ("Binance", "crypto", "", "binance.com", "", True),
+            ("Coinbase", "crypto", "", "coinbase.com", "", True),
+            ("MetaMask", "crypto", "", "metamask.io", "助记词离线保存", True),
+            ("Bybit", "crypto", "", "bybit.com", "", True),
         ],
     ),
     ("test.alex.2024@gmail.com", "临时测试用，还没注册东西", []),
