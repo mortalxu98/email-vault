@@ -79,7 +79,8 @@ def create_app(
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Referrer-Policy"] = "no-referrer"
+        # Not "no-referrer": that makes browsers send `Origin: null` on same-site form POSTs.
+        response.headers["Referrer-Policy"] = "same-origin"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; frame-ancestors 'none'; form-action 'self'"
         )

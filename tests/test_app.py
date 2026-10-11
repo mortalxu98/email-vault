@@ -201,3 +201,18 @@ def test_session_idle_expiry(monkeypatch: pytest.MonkeyPatch) -> None:
     assert sessions.get_key(token) is not None
     now[0] += 61
     assert sessions.get_key(token) is None
+
+
+def test_same_origin_post_allowed(unlocked: TestClient) -> None:
+    r = unlocked.post(
+        "/emails",
+        data={"address": "ok@gmail.com"},
+        headers={"Origin": "http://127.0.0.1:8000", "Sec-Fetch-Site": "same-origin"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303 and "err=" not in r.headers["location"]
+
+
+def test_referrer_policy_keeps_origin_header(client: TestClient) -> None:
+    # "no-referrer" makes browsers send `Origin: null`, which the origin guard rejects.
+    assert client.get("/setup").headers["referrer-policy"] == "same-origin"
