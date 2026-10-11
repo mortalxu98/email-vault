@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "_macros.html" import icon, email_avatar, secret, site, flashes %}
 
+{#- One markup for both views: .svc-grid.is-list turns cards into table rows. -#}
 {% macro account_card(a, show_email=false) -%}
-<article class="svc" data-category="{{ a.category }}">
-  <header class="svc-head">
+<article class="svc cat-{{ a.category }}" data-category="{{ a.category }}">
+  <div class="svc-main">
     {% set logo = platform_logo(a.platform, a.url) %}
     {% if logo %}
     <span class="avatar logo{{ ' wide' if logo in wide_logos }}"><svg aria-hidden="true"><use href="#brand-{{ logo }}"/></svg></span>
@@ -11,81 +12,125 @@
     <span class="avatar av-{{ a.platform | color_index }}">{{ a.platform[:1] | upper }}</span>
     {% endif %}
     <div class="svc-title">
-      <h4>{{ a.platform }}</h4>
+      <h4 title="{{ a.platform }}">{{ a.platform }}</h4>
       <span class="tag tag-{{ a.category }}">{{ categories.get(a.category, a.category) }}</span>
     </div>
-    <div class="svc-actions">
-      <button type="button" class="icon-btn" title="编辑"
-              data-open-dialog="account-dialog" data-action="/accounts/{{ a.id }}" data-title="编辑 {{ a.platform }}"
-              data-password-hint="留空则不修改"
-              data-fields='{{ {"platform": a.platform, "category": a.category, "username": a.username, "url": a.url, "note": a.note} | tojson }}'>{{ icon('edit') }}</button>
-      <form method="post" action="/accounts/{{ a.id }}/delete" data-confirm="删除 {{ a.platform }}？">
-        <button type="submit" class="icon-btn danger" title="删除">{{ icon('trash') }}</button>
-      </form>
-    </div>
-  </header>
+  </div>
   <dl class="svc-fields">
     {% if show_email %}
-    <dt>邮箱</dt><dd><a href="/?email_id={{ a.email_id }}">{{ a.email_address }}</a></dd>
+    <div class="f f-email"><dt>邮箱</dt><dd><a href="/?email_id={{ a.email_id }}">{{ a.email_address }}</a></dd></div>
     {% endif %}
-    {% if a.username %}
-    <dt>用户名</dt>
-    <dd><span class="copyable" data-copy-text="{{ a.username }}" title="点击复制">{{ a.username }}</span></dd>
-    {% endif %}
-    <dt>密码</dt><dd>{{ secret('/api/accounts/%d/password' % a.id, a.has_password) }}</dd>
-    {% if a.url %}<dt>网址</dt><dd class="url">{{ site(a.url) }}</dd>{% endif %}
+    <div class="f f-user{{ ' is-empty' if not a.username }}"><dt>用户名</dt>
+      <dd>{% if a.username %}<span class="copyable" data-copy-text="{{ a.username }}" title="点击复制">{{ a.username }}</span>{% else %}<span class="muted">—</span>{% endif %}</dd></div>
+    <div class="f f-pass"><dt>密码</dt><dd>{{ secret('/api/accounts/%d/password' % a.id, a.has_password) }}</dd></div>
+    <div class="f f-url{{ ' is-empty' if not a.url }}"><dt>网址</dt>
+      <dd>{% if a.url %}{{ site(a.url) }}{% else %}<span class="muted">—</span>{% endif %}</dd></div>
   </dl>
-  {% if a.note %}<p class="svc-note">{{ a.note }}</p>{% endif %}
+  {% if a.note %}<p class="svc-note" title="{{ a.note }}">{{ a.note }}</p>{% endif %}
+  <div class="svc-actions">
+    <button type="button" class="icon-btn" title="编辑"
+            data-open-dialog="account-dialog" data-action="/accounts/{{ a.id }}" data-title="编辑 {{ a.platform }}"
+            data-password-hint="留空则不修改"
+            data-fields='{{ {"platform": a.platform, "category": a.category, "username": a.username, "url": a.url, "note": a.note} | tojson }}'>{{ icon('edit') }}</button>
+    <form method="post" action="/accounts/{{ a.id }}/delete" data-confirm="删除 {{ a.platform }}？">
+      <button type="submit" class="icon-btn danger" title="删除">{{ icon('trash') }}</button>
+    </form>
+  </div>
 </article>
+{%- endmacro %}
+
+{% macro services(items, show_email=false) -%}
+<div class="svc-grid" data-view-target>
+  <div class="list-head{{ ' with-email' if show_email }}" aria-hidden="true">
+    <span>平台</span>
+    <span class="cols">{% if show_email %}<span>邮箱</span>{% endif %}<span>用户名</span><span>密码</span><span>网址</span></span>
+    <span></span>
+  </div>
+  {% for a in items %}{{ account_card(a, show_email) }}{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro view_toggle() -%}
+<div class="segmented" role="group" aria-label="视图">
+  <button type="button" class="seg active" data-view="grid" title="卡片视图">{{ icon('grid') }}</button>
+  <button type="button" class="seg" data-view="list" title="列表视图">{{ icon('list') }}</button>
+</div>
 {%- endmacro %}
 
 {% block body_attrs %}data-unlocked{% endblock %}
 
 {% block body %}
-<header class="topbar">
-  <a href="/" class="brand"><span class="brand-mark">{{ icon('logo') }}</span>Email Vault</a>
-  <form method="get" action="/" class="search">
-    {{ icon('search') }}
-    <input type="search" name="q" value="{{ q }}" placeholder="搜索邮箱或平台，如 ChatGPT" autocomplete="off">
-    {% if q %}<a href="/" class="search-clear" title="清除">{{ icon('x') }}</a>{% endif %}
-  </form>
-  <div class="topbar-actions">
-    <a href="/export" class="btn ghost" title="导出加密备份">{{ icon('download') }}<span>导出备份</span></a>
-    <form method="post" action="/lock">
-      <button type="submit" class="btn ghost" title="立即锁定">{{ icon('lock') }}<span>锁定</span></button>
-    </form>
-  </div>
-</header>
-
-{{ flashes(err, msg) }}
-
-<div class="layout">
+<div class="app">
   <aside class="sidebar">
-    <div class="sidebar-head">
-      <span class="section-label">邮箱</span>
-      {% if not q %}<span class="muted small">{{ emails | length }} 个 · {{ emails | sum(attribute='account_count') }} 个服务</span>{% endif %}
+    <div class="sidebar-top">
+      <a href="/" class="brand"><span class="brand-mark">{{ icon('logo') }}</span>Email Vault</a>
+      <form method="get" action="/" class="search">
+        {{ icon('search') }}
+        <input type="search" name="q" value="{{ q }}" placeholder="搜索邮箱或平台" autocomplete="off">
+        {% if q %}<a href="/" class="search-clear" title="清除">{{ icon('x') }}</a>{% endif %}
+      </form>
+      <button type="button" class="primary block"
+              data-open-dialog="email-dialog" data-action="/emails" data-title="新增邮箱"
+              data-password-hint="可留空" data-fields='{}'>{{ icon('plus') }}新增邮箱</button>
     </div>
-    <button type="button" class="primary block"
-            data-open-dialog="email-dialog" data-action="/emails" data-title="新增邮箱"
-            data-password-hint="可留空" data-fields='{}'>{{ icon('plus') }}新增邮箱</button>
-    <ul class="email-list">
-      {% for e in emails %}
-      {% set local, domain = e.address | split_address %}
-      <li>
-        <a href="/?{{ {'email_id': e.id, 'q': q} | urlencode }}"
-           class="{{ 'active' if selected and selected.id == e.id }}" title="{{ e.address }}">
-          {{ email_avatar(e.address) }}
-          <span class="email-text"><span class="local">{{ local }}</span><span class="domain">{{ domain }}</span></span>
-          <span class="count">{{ e.account_count }}</span>
-        </a>
-      </li>
+
+    <nav class="email-nav" aria-label="邮箱">
+      {% for pv, items in groups %}
+      <div class="group">
+        <div class="group-head"><span>{{ pv.name }}</span><span>{{ items | length }}</span></div>
+        <ul class="email-list">
+          {% for e in items %}
+          {% set local, domain = e.address | split_address %}
+          <li>
+            <a href="/?{{ {'email_id': e.id, 'q': q} | urlencode }}"
+               class="{{ 'active' if selected and selected.id == e.id }}" title="{{ e.address }}">
+              {{ email_avatar(e.address, 'sm') }}
+              <span class="email-text"><span class="local">{{ local }}</span><span class="domain">{{ domain }}</span></span>
+              <span class="count">{{ e.account_count }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
       {% else %}
-      <li class="muted empty-side">{{ '没有匹配的邮箱' if q else '还没有邮箱' }}</li>
+      <p class="muted empty-side">{{ '没有匹配的邮箱' if q else '还没有邮箱' }}</p>
       {% endfor %}
-    </ul>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a href="/export" class="btn ghost" title="导出加密备份">{{ icon('download') }}导出备份</a>
+      <form method="post" action="/lock">
+        <button type="submit" class="btn ghost" title="立即锁定">{{ icon('lock') }}锁定</button>
+      </form>
+    </div>
   </aside>
 
-  <main class="content">
+  <main class="main">
+    {{ flashes(err, msg) }}
+
+    <section class="stats" aria-label="概览">
+      <div class="stat">
+        <span class="stat-icon">{{ icon('mail') }}</span>
+        <div><div class="stat-value">{{ stats.emails }}</div><div class="stat-label">邮箱</div></div>
+      </div>
+      <div class="stat">
+        <span class="stat-icon">{{ icon('layers') }}</span>
+        <div><div class="stat-value">{{ stats.accounts }}</div><div class="stat-label">关联服务</div></div>
+      </div>
+      <div class="stat" title="没有保存密码的服务，多为 Google / Apple 等第三方登录">
+        <span class="stat-icon">{{ icon('key') }}</span>
+        <div><div class="stat-value">{{ stats.without_password }}</div><div class="stat-label">未设密码</div></div>
+      </div>
+      <div class="stat stat-wide">
+        <span class="stat-icon">{{ icon('tag') }}</span>
+        <div class="stat-cats">
+          {% for value, label in categories.items() %}
+          <span class="cat-pill cat-{{ value }}"><i aria-hidden="true"></i>{{ label }}<b>{{ stats.by_category.get(value, 0) }}</b></span>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
     {% if selected %}
     {% set pv = selected.address | provider %}
     <section class="hero">
@@ -97,9 +142,9 @@
         </div>
         <div class="hero-meta">
           <span class="pill">{{ pv.name }}</span>
-          <span class="muted">{{ selected.account_count }} 个关联服务</span>
+          <span class="dot-sep">{{ selected.account_count }} 个关联服务</span>
+          <span class="hero-secret"><span class="field-label">邮箱密码</span>{{ secret('/api/emails/%d/password' % selected.id, selected.has_password) }}</span>
         </div>
-        <div class="hero-secret"><span class="field-label">邮箱密码</span>{{ secret('/api/emails/%d/password' % selected.id, selected.has_password) }}</div>
         {% if selected.note %}<p class="hero-note">{{ selected.note }}</p>{% endif %}
       </div>
       <div class="hero-actions">
@@ -115,7 +160,7 @@
     </section>
 
     <section>
-      <div class="section-head">
+      <div class="toolbar">
         <div class="chips">
           <button type="button" class="chip active" data-filter="all">全部 <span>{{ accounts | length }}</span></button>
           {% for value, label in categories.items() %}
@@ -123,31 +168,33 @@
           {% if n %}<button type="button" class="chip" data-filter="{{ value }}">{{ label }} <span>{{ n }}</span></button>{% endif %}
           {% endfor %}
         </div>
-        <button type="button" class="primary"
-                data-open-dialog="account-dialog" data-action="/accounts" data-title="新增关联服务"
-                data-password-hint="可留空（如 Google 登录）"
-                data-fields='{{ {"email_id": selected.id, "category": "ai"} | tojson }}'>{{ icon('plus') }}新增服务</button>
+        <div class="toolbar-right">
+          {% if accounts %}{{ view_toggle() }}{% endif %}
+          <button type="button" class="primary"
+                  data-open-dialog="account-dialog" data-action="/accounts" data-title="新增关联服务"
+                  data-password-hint="可留空（如 Google 登录）"
+                  data-fields='{{ {"email_id": selected.id, "category": "ai"} | tojson }}'>{{ icon('plus') }}新增服务</button>
+        </div>
       </div>
       {% if accounts %}
-      <div class="svc-grid">
-        {% for a in accounts %}{{ account_card(a) }}{% endfor %}
-      </div>
+      {{ services(accounts) }}
       {% else %}
       <div class="empty">
-        <div class="empty-icon">{{ icon('mail') }}</div>
+        <div class="empty-icon">{{ icon('layers') }}</div>
         <p>这个邮箱还没有关联服务</p>
-        <p class="muted small">点右上角「新增服务」，记录用它注册的平台</p>
+        <p class="muted small">点「新增服务」，输入平台名会自动补全</p>
       </div>
       {% endif %}
     </section>
 
     {% elif q %}
     <section>
-      <div class="section-head"><h3>搜索「{{ q }}」：{{ results | length }} 个服务</h3></div>
-      {% if results %}
-      <div class="svc-grid">
-        {% for a in results %}{{ account_card(a, show_email=true) }}{% endfor %}
+      <div class="toolbar">
+        <h3>搜索「{{ q }}」：{{ results | length }} 个服务</h3>
+        {% if results %}<div class="toolbar-right">{{ view_toggle() }}</div>{% endif %}
       </div>
+      {% if results %}
+      {{ services(results, show_email=true) }}
       {% else %}
       <div class="empty">
         <div class="empty-icon">{{ icon('search') }}</div>

@@ -47,6 +47,14 @@ _ACCOUNT_COLUMNS = """
 """
 
 
+@dataclass(frozen=True)
+class Stats:
+    emails: int
+    accounts: int
+    without_password: int
+    by_category: dict[str, int]
+
+
 class DuplicateEmailError(Exception):
     pass
 
@@ -236,6 +244,17 @@ class Store:
                 {"p": _like(query)},
             ).fetchall()
         return [_account(r) for r in rows]
+
+    def stats(self) -> Stats:
+        with self._connect() as conn:
+            emails = conn.execute("SELECT COUNT(*) FROM emails").fetchone()[0]
+            accounts, without_password = conn.execute(
+                "SELECT COUNT(*), COUNT(*) - COUNT(password_enc) FROM accounts"
+            ).fetchone()
+            by_category = dict(
+                conn.execute("SELECT category, COUNT(*) FROM accounts GROUP BY category").fetchall()
+            )
+        return Stats(emails, accounts, without_password, by_category)
 
     def distinct_platforms(self) -> list[tuple[str, str, str]]:
         """(platform, category, url) per platform name, from its most recent account."""

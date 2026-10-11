@@ -73,6 +73,23 @@
     form.querySelector("input:not([type=hidden])")?.focus();
   }
 
+  const VIEW_KEY = "email-vault:view";
+
+  function applyView(view) {
+    for (const grid of document.querySelectorAll("[data-view-target]")) {
+      grid.classList.toggle("is-list", view === "list");
+    }
+    for (const seg of document.querySelectorAll("[data-view]")) {
+      seg.classList.toggle("active", seg.dataset.view === view);
+    }
+  }
+
+  try {
+    applyView(localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid");
+  } catch {
+    applyView("grid");
+  }
+
   const handlers = {
     async reveal(btn) {
       const code = btn.closest(".secret").querySelector("[data-secret]");
@@ -93,6 +110,14 @@
     },
     async copyText(btn) {
       await copy(btn.dataset.copyText);
+    },
+    view(btn) {
+      applyView(btn.dataset.view);
+      try {
+        localStorage.setItem(VIEW_KEY, btn.dataset.view);
+      } catch {
+        // storage unavailable (private mode etc.): the choice just won't persist
+      }
     },
     filter(btn) {
       const value = btn.dataset.filter;

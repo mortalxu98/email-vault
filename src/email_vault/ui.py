@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 import zlib
-from typing import NamedTuple
+from typing import NamedTuple, Protocol, TypeVar
 from urllib.parse import urlsplit
 
 AVATAR_PALETTE_SIZE = 8
+
+
+class _HasAddress(Protocol):
+    @property
+    def address(self) -> str: ...
+
+
+_E = TypeVar("_E", bound=_HasAddress)
 
 
 class Provider(NamedTuple):
@@ -43,6 +51,15 @@ def provider(address: str) -> Provider:
     if known:
         return known
     return Provider(domain, (domain[:1] or "?").upper(), f"av-{color_index(domain)}")
+
+
+def group_by_provider(emails: list[_E]) -> list[tuple[Provider, list[_E]]]:
+    """Group emails by provider, biggest group first; unknown domains each form their own."""
+    groups: dict[str, tuple[Provider, list[_E]]] = {}
+    for email in emails:
+        pv = provider(email.address)
+        groups.setdefault(pv.name, (pv, []))[1].append(email)
+    return sorted(groups.values(), key=lambda g: (-len(g[1]), g[0].name.lower()))
 
 
 def split_address(address: str) -> tuple[str, str]:

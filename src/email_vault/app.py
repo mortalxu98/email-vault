@@ -193,6 +193,8 @@ def create_app(
                 "accounts": accounts,
                 "results": results,
                 "catalog": ui.platform_catalog(store.distinct_platforms()),
+                "stats": store.stats(),
+                "groups": ui.group_by_provider(emails),
                 "q": q,
                 "err": err,
                 "msg": msg,
