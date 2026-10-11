@@ -18,6 +18,23 @@ First launch asks for a master password. **It cannot be recovered if lost.**
 | `EMAIL_VAULT_PORT` | `8000` | Port (always bound to 127.0.0.1) |
 | `EMAIL_VAULT_IDLE_MINUTES` | `10` | Auto-lock after idle |
 
+## macOS app
+
+```bash
+scripts/build_macos_app.sh            # -> dist/Email Vault.app
+scripts/build_macos_app.sh --install  # also copy to /Applications (replaces old copy)
+scripts/build_macos_app.sh --dry-run  # show commands only
+uv run --group desktop email-vault-app  # run the app from source
+```
+
+The app is a native WebKit window (pywebview) around the same server, bound to a random
+loopback port while the window is open. Same `vault.db`, same env vars. Clipboard and
+"Save as" go through authenticated `/native/*` routes (pywebview's JS bridge needs
+`eval`, which the CSP forbids). Logs: `~/Library/Logs/EmailVault/app.log`.
+Icon: `assets/icon.svg` -> `uv run --with playwright python scripts/build_icon.py`.
+
+The build is unsigned; fine for local use. On another Mac, right-click -> Open the first time.
+
 ## Security model
 
 - Key = Argon2id(master password, random salt); passwords encrypted with AES-256-GCM.

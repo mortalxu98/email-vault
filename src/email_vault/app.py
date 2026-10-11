@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Protocol
 from urllib.parse import urlencode, urlsplit
 
 from fastapi import FastAPI, Form, Request
@@ -36,6 +36,16 @@ class NotUnlocked(Exception):
     pass
 
 
+class NativeHooks(Protocol):
+    """OS integrations provided by the desktop shell (see desktop.py)."""
+
+    def copy(self, text: str) -> bool: ...
+
+    def save_backup(self, filename: str, data: bytes) -> str | None:
+        """Ask the user where to save; return the path, or None if cancelled."""
+        ...
+
+
 def _redirect(path: str, **params: str | int | None) -> RedirectResponse:
     query = urlencode({k: v for k, v in params.items() if v not in (None, "")})
     return RedirectResponse(f"{path}?{query}" if query else path, status_code=303)
@@ -59,6 +69,7 @@ def create_app(
     db_path: Path,
     idle_timeout: float,
     allowed_hosts: tuple[str, ...] = ("127.0.0.1", "localhost"),
+    native: NativeHooks | None = None,
 ) -> FastAPI:
     store = Store(db_path)
     vault = Vault(store)
@@ -66,6 +77,7 @@ def create_app(
     templates = Jinja2Templates(directory=PACKAGE_DIR / "templates")
     templates.env.globals["categories"] = CATEGORIES
     templates.env.globals["idle_timeout_ms"] = int(idle_timeout * 1000)
+    templates.env.globals["native"] = native is not None
     templates.env.filters["provider"] = ui.provider
     templates.env.filters["color_index"] = ui.color_index
     templates.env.filters["split_address"] = ui.split_address
@@ -335,14 +347,33 @@ def create_app(
 
     # --- backup -----------------------------------------------------------
 
+    def backup_filename() -> str:
+        return f"email-vault-{datetime.now():%Y%m%d-%H%M%S}.db"
+
     @app.get("/export")
     def export(request: Request) -> Response:
         require_key(request)
-        filename = f"email-vault-{datetime.now():%Y%m%d-%H%M%S}.db"
+        filename = backup_filename()
         return Response(
             store.export_bytes(),
             media_type="application/octet-stream",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
+
+    # --- desktop-only native actions ---------------------------------------
+
+    if native is not None:
+        hooks = native
+
+        @app.post("/native/copy")
+        def native_copy(request: Request, text: FormStr) -> Response:
+            require_key(request)
+            return JSONResponse({"ok": hooks.copy(text)})
+
+        @app.post("/native/export")
+        def native_export(request: Request) -> Response:
+            require_key(request)
+            saved = hooks.save_backup(backup_filename(), store.export_bytes())
+            return JSONResponse({"saved": saved})
 
     return app

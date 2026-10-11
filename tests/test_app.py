@@ -228,3 +228,42 @@ def test_catalog_includes_users_own_platforms(unlocked: TestClient) -> None:
     assert '"name": "My Private Forum"' in catalog and '"mine": true' in catalog
     assert catalog.count('"name": "ChatGPT"') == 1 and '"name": "chatgpt"' not in catalog
     assert '"name": "Bybit"' in catalog
+
+
+class FakeShell:
+    def __init__(self) -> None:
+        self.copied: list[str] = []
+        self.saved: list[tuple[str, bytes]] = []
+
+    def copy(self, text: str) -> bool:
+        self.copied.append(text)
+        return True
+
+    def save_backup(self, filename: str, data: bytes) -> str | None:
+        self.saved.append((filename, data))
+        return f"/saved/{filename}"
+
+
+def test_native_routes_absent_in_browser_mode(unlocked: TestClient) -> None:
+    assert unlocked.post("/native/copy", data={"text": "x"}).status_code == 404
+    assert "data-native" not in unlocked.get("/").text
+
+
+def test_native_routes_in_app_mode(db_path: Path) -> None:
+    shell = FakeShell()
+    with TestClient(create_app(db_path, idle_timeout=600, native=shell), base_url=BASE_URL) as c:
+        # locked: refused, nothing reaches the OS
+        assert c.post("/native/copy", data={"text": "x"}, follow_redirects=False).status_code == 303
+        assert c.post("/native/export", follow_redirects=False).status_code == 303
+        c.post("/setup", data={"password": MASTER, "confirm": MASTER})
+        assert "data-native" in c.get("/").text
+        add_email(c, "a@gmail.com", "mail-secret-123")
+        assert c.post("/native/copy", data={"text": "hello"}).json() == {"ok": True}
+        r = c.post("/native/export").json()
+        assert shell.copied == ["hello"]
+        ((filename, data),) = shell.saved
+        assert r == {"saved": f"/saved/{filename}"} and filename.endswith(".db")
+        assert data.startswith(b"SQLite format 3") and b"mail-secret-123" not in data
+        # cross-site requests are still blocked
+        bad = c.post("/native/copy", data={"text": "x"}, headers={"Origin": "https://evil.com"})
+        assert bad.status_code == 403 and shell.copied == ["hello"]

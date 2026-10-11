@@ -25,9 +25,27 @@
     setTimeout(() => el.remove(), 2000);
   }
 
+  // Inside the macOS app (desktop.py) the page gets OS integrations through
+  // authenticated /native/* routes instead of browser APIs.
+  const isNative = document.body.hasAttribute("data-native");
+
+  async function nativePost(path, data = {}) {
+    const res = await fetch(path, { method: "POST", body: new URLSearchParams(data) });
+    if (res.redirected || res.status === 401) {
+      location.href = "/unlock";
+      throw new Error("locked");
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
   async function copy(text) {
     try {
-      await navigator.clipboard.writeText(text);
+      if (isNative) {
+        if (!(await nativePost("/native/copy", { text })).ok) throw new Error("copy failed");
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
       toast("已复制到剪贴板");
     } catch {
       toast("复制失败", "err");
@@ -154,6 +172,19 @@
         Promise.resolve(handler(btn)).catch((err) => console.error(err));
         return;
       }
+    }
+  });
+
+  // The app has no download manager: the server opens a native "Save as" dialog.
+  document.addEventListener("click", async (event) => {
+    const link = event.target.closest("[data-export]");
+    if (!link || !isNative) return;
+    event.preventDefault();
+    try {
+      if ((await nativePost("/native/export")).saved) toast("备份已保存");
+    } catch (err) {
+      console.error(err);
+      toast("导出失败", "err");
     }
   });
 
