@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import crypto
+from . import crypto, ui
 from .auth import AlreadyInitialized, InvalidMasterPassword, SessionManager, Vault
 from .store import DuplicateEmailError, NotFoundError, Store
 
@@ -61,6 +61,9 @@ def create_app(
     templates = Jinja2Templates(directory=PACKAGE_DIR / "templates")
     templates.env.globals["categories"] = CATEGORIES
     templates.env.globals["idle_timeout_ms"] = int(idle_timeout * 1000)
+    templates.env.filters["provider"] = ui.provider
+    templates.env.filters["color_index"] = ui.color_index
+    templates.env.filters["split_address"] = ui.split_address
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(allowed_hosts))

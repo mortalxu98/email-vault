@@ -16,22 +16,26 @@
     return (await res.json()).password ?? "";
   }
 
-  function flashButton(btn, text) {
-    const original = btn.dataset.label ?? btn.textContent;
-    btn.dataset.label = original;
-    btn.textContent = text;
-    setTimeout(() => {
-      btn.textContent = original;
-    }, 1200);
+  function toast(text, kind = "ok") {
+    const box = document.querySelector("[data-toasts]") ?? document.body;
+    const el = document.createElement("div");
+    el.className = `toast ${kind}`;
+    el.textContent = text;
+    box.append(el);
+    setTimeout(() => el.remove(), 2000);
   }
 
-  async function copy(text, btn) {
+  async function copy(text) {
     try {
       await navigator.clipboard.writeText(text);
-      flashButton(btn, "已复制");
+      toast("已复制到剪贴板");
     } catch {
-      flashButton(btn, "复制失败");
+      toast("复制失败", "err");
     }
+  }
+
+  function setIcon(btn, name) {
+    btn.querySelector("use")?.setAttribute("href", `#i-${name}`);
   }
 
   // Unbiased random password via rejection sampling.
@@ -60,6 +64,7 @@
       input.type = "password";
       input.placeholder = btn.dataset.passwordHint ?? "";
     }
+    for (const toggle of form.querySelectorAll("[data-toggle-password]")) setIcon(toggle, "eye");
     dialog.showModal();
     form.querySelector("input:not([type=hidden])")?.focus();
   }
@@ -70,18 +75,29 @@
       if (code.dataset.revealed) {
         code.textContent = MASK;
         delete code.dataset.revealed;
-        btn.textContent = "显示";
+        setIcon(btn, "eye");
+        btn.title = "显示";
         return;
       }
       code.textContent = await fetchSecret(btn.dataset.reveal);
       code.dataset.revealed = "1";
-      btn.textContent = "隐藏";
+      setIcon(btn, "eye-off");
+      btn.title = "隐藏";
     },
     async copySecret(btn) {
-      await copy(await fetchSecret(btn.dataset.copySecret), btn);
+      await copy(await fetchSecret(btn.dataset.copySecret));
     },
     async copyText(btn) {
-      await copy(btn.dataset.copyText, btn);
+      await copy(btn.dataset.copyText);
+    },
+    filter(btn) {
+      const value = btn.dataset.filter;
+      for (const chip of document.querySelectorAll("[data-filter]")) {
+        chip.classList.toggle("active", chip === btn);
+      }
+      for (const card of document.querySelectorAll(".svc[data-category]")) {
+        card.hidden = value !== "all" && card.dataset.category !== value;
+      }
     },
     openDialog,
     closeDialog(btn) {
@@ -90,13 +106,13 @@
     togglePassword(btn) {
       const input = btn.closest(".pw-row").querySelector("input");
       input.type = input.type === "password" ? "text" : "password";
-      btn.textContent = input.type === "password" ? "显示" : "隐藏";
+      setIcon(btn, input.type === "password" ? "eye" : "eye-off");
     },
     generatePassword(btn) {
       const input = btn.closest(".pw-row").querySelector("input");
       input.value = generatePassword();
       input.type = "text";
-      btn.parentElement.querySelector("[data-toggle-password]").textContent = "隐藏";
+      setIcon(btn.parentElement.querySelector("[data-toggle-password]"), "eye-off");
     },
   };
 
@@ -125,7 +141,7 @@
     history.replaceState(null, "", url);
   }
   setTimeout(() => {
-    for (const el of document.querySelectorAll(".flash.ok")) el.remove();
+    for (const el of document.querySelectorAll(".toast.ok")) el.remove();
   }, 4000);
 
   // Mirror the server-side idle lock so revealed secrets don't linger on screen.

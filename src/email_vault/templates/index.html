@@ -1,159 +1,181 @@
 {% extends "base.html" %}
+{% from "_macros.html" import icon, email_avatar, secret, site, flashes %}
 
-{% macro secret(url, has_password) -%}
-  {%- if has_password -%}
-  <span class="secret">
-    <code data-secret>••••••••</code>
-    <button type="button" class="link" data-reveal="{{ url }}">显示</button>
-    <button type="button" class="link" data-copy-secret="{{ url }}">复制</button>
-  </span>
-  {%- else -%}
-  <span class="muted">—</span>
-  {%- endif -%}
-{%- endmacro %}
-
-{% macro site(url) -%}
-  {%- if url.startswith(('http://', 'https://')) -%}
-  <a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ url }}</a>
-  {%- elif url -%}{{ url }}{%- endif -%}
+{% macro account_card(a, show_email=false) -%}
+<article class="svc" data-category="{{ a.category }}">
+  <header class="svc-head">
+    <span class="avatar av-{{ a.platform | color_index }}">{{ a.platform[:1] | upper }}</span>
+    <div class="svc-title">
+      <h4>{{ a.platform }}</h4>
+      <span class="tag tag-{{ a.category }}">{{ categories.get(a.category, a.category) }}</span>
+    </div>
+    <div class="svc-actions">
+      <button type="button" class="icon-btn" title="编辑"
+              data-open-dialog="account-dialog" data-action="/accounts/{{ a.id }}" data-title="编辑 {{ a.platform }}"
+              data-password-hint="留空则不修改"
+              data-fields='{{ {"platform": a.platform, "category": a.category, "username": a.username, "url": a.url, "note": a.note} | tojson }}'>{{ icon('edit') }}</button>
+      <form method="post" action="/accounts/{{ a.id }}/delete" data-confirm="删除 {{ a.platform }}？">
+        <button type="submit" class="icon-btn danger" title="删除">{{ icon('trash') }}</button>
+      </form>
+    </div>
+  </header>
+  <dl class="svc-fields">
+    {% if show_email %}
+    <dt>邮箱</dt><dd><a href="/?email_id={{ a.email_id }}">{{ a.email_address }}</a></dd>
+    {% endif %}
+    {% if a.username %}
+    <dt>用户名</dt>
+    <dd><span class="copyable" data-copy-text="{{ a.username }}" title="点击复制">{{ a.username }}</span></dd>
+    {% endif %}
+    <dt>密码</dt><dd>{{ secret('/api/accounts/%d/password' % a.id, a.has_password) }}</dd>
+    {% if a.url %}<dt>网址</dt><dd class="url">{{ site(a.url) }}</dd>{% endif %}
+  </dl>
+  {% if a.note %}<p class="svc-note">{{ a.note }}</p>{% endif %}
+</article>
 {%- endmacro %}
 
 {% block body_attrs %}data-unlocked{% endblock %}
 
 {% block body %}
 <header class="topbar">
-  <a href="/" class="brand">🔐 Email Vault</a>
+  <a href="/" class="brand"><span class="brand-mark">{{ icon('logo') }}</span>Email Vault</a>
   <form method="get" action="/" class="search">
-    <input type="search" name="q" value="{{ q }}" placeholder="搜索邮箱 / 平台，如 ChatGPT">
+    {{ icon('search') }}
+    <input type="search" name="q" value="{{ q }}" placeholder="搜索邮箱或平台，如 ChatGPT" autocomplete="off">
+    {% if q %}<a href="/" class="search-clear" title="清除">{{ icon('x') }}</a>{% endif %}
   </form>
-  <a href="/export" class="btn">导出备份</a>
-  <form method="post" action="/lock"><button type="submit" class="btn">锁定</button></form>
+  <div class="topbar-actions">
+    <a href="/export" class="btn ghost" title="导出加密备份">{{ icon('download') }}<span>导出备份</span></a>
+    <form method="post" action="/lock">
+      <button type="submit" class="btn ghost" title="立即锁定">{{ icon('lock') }}<span>锁定</span></button>
+    </form>
+  </div>
 </header>
 
-{% if err %}<p class="flash err">{{ err }}</p>{% endif %}
-{% if msg %}<p class="flash ok">{{ msg }}</p>{% endif %}
+{{ flashes(err, msg) }}
 
 <div class="layout">
   <aside class="sidebar">
+    <div class="sidebar-head">
+      <span class="section-label">邮箱</span>
+      {% if not q %}<span class="muted small">{{ emails | length }} 个 · {{ emails | sum(attribute='account_count') }} 个服务</span>{% endif %}
+    </div>
     <button type="button" class="primary block"
             data-open-dialog="email-dialog" data-action="/emails" data-title="新增邮箱"
-            data-password-hint="可留空" data-fields='{}'>+ 新增邮箱</button>
+            data-password-hint="可留空" data-fields='{}'>{{ icon('plus') }}新增邮箱</button>
     <ul class="email-list">
       {% for e in emails %}
+      {% set local, domain = e.address | split_address %}
       <li>
         <a href="/?{{ {'email_id': e.id, 'q': q} | urlencode }}"
-           class="{{ 'active' if selected and selected.id == e.id }}">
-          <span class="addr">{{ e.address }}</span>
+           class="{{ 'active' if selected and selected.id == e.id }}" title="{{ e.address }}">
+          {{ email_avatar(e.address) }}
+          <span class="email-text"><span class="local">{{ local }}</span><span class="domain">{{ domain }}</span></span>
           <span class="count">{{ e.account_count }}</span>
         </a>
       </li>
       {% else %}
-      <li class="muted empty">{{ '没有匹配的邮箱' if q else '还没有邮箱，先新增一个' }}</li>
+      <li class="muted empty-side">{{ '没有匹配的邮箱' if q else '还没有邮箱' }}</li>
       {% endfor %}
     </ul>
   </aside>
 
   <main class="content">
     {% if selected %}
-    <section class="card">
-      <div class="card-head">
-        <h2>{{ selected.address }}</h2>
-        <div class="actions">
-          <button type="button" class="link" data-copy-text="{{ selected.address }}">复制地址</button>
-          <button type="button" class="link"
-                  data-open-dialog="email-dialog" data-action="/emails/{{ selected.id }}" data-title="编辑邮箱"
-                  data-password-hint="留空则不修改"
-                  data-fields='{{ {"address": selected.address, "note": selected.note} | tojson }}'>编辑</button>
-          <form method="post" action="/emails/{{ selected.id }}/delete"
-                data-confirm="删除 {{ selected.address }} 及其 {{ selected.account_count }} 个关联服务？此操作不可恢复。">
-            <button type="submit" class="link danger">删除</button>
-          </form>
+    {% set pv = selected.address | provider %}
+    <section class="hero">
+      {{ email_avatar(selected.address, 'lg') }}
+      <div class="hero-body">
+        <div class="hero-title">
+          <h2>{{ selected.address }}</h2>
+          <button type="button" class="icon-btn" data-copy-text="{{ selected.address }}" title="复制地址">{{ icon('copy') }}</button>
         </div>
+        <div class="hero-meta">
+          <span class="pill">{{ pv.name }}</span>
+          <span class="muted">{{ selected.account_count }} 个关联服务</span>
+        </div>
+        <div class="hero-secret"><span class="field-label">邮箱密码</span>{{ secret('/api/emails/%d/password' % selected.id, selected.has_password) }}</div>
+        {% if selected.note %}<p class="hero-note">{{ selected.note }}</p>{% endif %}
       </div>
-      <dl class="meta">
-        <dt>邮箱密码</dt><dd>{{ secret('/api/emails/%d/password' % selected.id, selected.has_password) }}</dd>
-        {% if selected.note %}<dt>备注</dt><dd class="note">{{ selected.note }}</dd>{% endif %}
-      </dl>
+      <div class="hero-actions">
+        <button type="button" class="btn"
+                data-open-dialog="email-dialog" data-action="/emails/{{ selected.id }}" data-title="编辑邮箱"
+                data-password-hint="留空则不修改"
+                data-fields='{{ {"address": selected.address, "note": selected.note} | tojson }}'>{{ icon('edit') }}编辑</button>
+        <form method="post" action="/emails/{{ selected.id }}/delete"
+              data-confirm="删除 {{ selected.address }} 及其 {{ selected.account_count }} 个关联服务？此操作不可恢复。">
+          <button type="submit" class="btn danger-outline">{{ icon('trash') }}删除</button>
+        </form>
+      </div>
     </section>
 
-    <section class="card">
-      <div class="card-head">
-        <h3>关联服务（{{ accounts | length }}）</h3>
+    <section>
+      <div class="section-head">
+        <div class="chips">
+          <button type="button" class="chip active" data-filter="all">全部 <span>{{ accounts | length }}</span></button>
+          {% for value, label in categories.items() %}
+          {% set n = accounts | selectattr('category', 'equalto', value) | list | length %}
+          {% if n %}<button type="button" class="chip" data-filter="{{ value }}">{{ label }} <span>{{ n }}</span></button>{% endif %}
+          {% endfor %}
+        </div>
         <button type="button" class="primary"
-                data-open-dialog="account-dialog" data-action="/accounts" data-title="新增关联服务 · {{ selected.address }}"
+                data-open-dialog="account-dialog" data-action="/accounts" data-title="新增关联服务"
                 data-password-hint="可留空（如 Google 登录）"
-                data-fields='{{ {"email_id": selected.id, "category": "ai"} | tojson }}'>+ 新增服务</button>
+                data-fields='{{ {"email_id": selected.id, "category": "ai"} | tojson }}'>{{ icon('plus') }}新增服务</button>
       </div>
       {% if accounts %}
-      <table>
-        <thead><tr><th>平台</th><th>分类</th><th>用户名</th><th>密码</th><th>网址</th><th>备注</th><th></th></tr></thead>
-        <tbody>
-        {% for a in accounts %}
-          <tr>
-            <td class="strong">{{ a.platform }}</td>
-            <td><span class="tag tag-{{ a.category }}">{{ categories.get(a.category, a.category) }}</span></td>
-            <td>{% if a.username %}<span class="copyable" data-copy-text="{{ a.username }}" title="点击复制">{{ a.username }}</span>{% endif %}</td>
-            <td>{{ secret('/api/accounts/%d/password' % a.id, a.has_password) }}</td>
-            <td class="url">{{ site(a.url) }}</td>
-            <td class="note">{{ a.note }}</td>
-            <td class="row-actions">
-              <button type="button" class="link"
-                      data-open-dialog="account-dialog" data-action="/accounts/{{ a.id }}" data-title="编辑 {{ a.platform }}"
-                      data-password-hint="留空则不修改"
-                      data-fields='{{ {"platform": a.platform, "category": a.category, "username": a.username, "url": a.url, "note": a.note} | tojson }}'>编辑</button>
-              <form method="post" action="/accounts/{{ a.id }}/delete" data-confirm="删除 {{ a.platform }}？">
-                <button type="submit" class="link danger">删除</button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      <div class="svc-grid">
+        {% for a in accounts %}{{ account_card(a) }}{% endfor %}
+      </div>
       {% else %}
-      <p class="muted">这个邮箱还没有关联服务。</p>
+      <div class="empty">
+        <div class="empty-icon">{{ icon('mail') }}</div>
+        <p>这个邮箱还没有关联服务</p>
+        <p class="muted small">点右上角「新增服务」，记录用它注册的平台</p>
+      </div>
       {% endif %}
     </section>
 
     {% elif q %}
-    <section class="card">
-      <h3>搜索「{{ q }}」：{{ results | length }} 个服务</h3>
+    <section>
+      <div class="section-head"><h3>搜索「{{ q }}」：{{ results | length }} 个服务</h3></div>
       {% if results %}
-      <table>
-        <thead><tr><th>平台</th><th>分类</th><th>邮箱</th><th>用户名</th><th>密码</th><th>网址</th></tr></thead>
-        <tbody>
-        {% for a in results %}
-          <tr>
-            <td class="strong">{{ a.platform }}</td>
-            <td><span class="tag tag-{{ a.category }}">{{ categories.get(a.category, a.category) }}</span></td>
-            <td><a href="/?email_id={{ a.email_id }}">{{ a.email_address }}</a></td>
-            <td>{{ a.username }}</td>
-            <td>{{ secret('/api/accounts/%d/password' % a.id, a.has_password) }}</td>
-            <td class="url">{{ site(a.url) }}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      <div class="svc-grid">
+        {% for a in results %}{{ account_card(a, show_email=true) }}{% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">
+        <div class="empty-icon">{{ icon('search') }}</div>
+        <p>没有找到匹配的服务</p>
+      </div>
       {% endif %}
     </section>
 
     {% else %}
-    <section class="card"><p class="muted">从左侧新增第一个邮箱。</p></section>
+    <div class="empty big">
+      <div class="empty-icon">{{ icon('logo') }}</div>
+      <p>欢迎使用 Email Vault</p>
+      <p class="muted small">先在左侧新增一个邮箱，再记录它注册过的平台</p>
+    </div>
     {% endif %}
   </main>
 </div>
 
 <dialog id="email-dialog">
   <form method="post">
-    <h3 data-dialog-title></h3>
-    <label>邮箱地址 <input type="email" name="address" required></label>
+    <div class="dialog-head">
+      <h3 data-dialog-title></h3>
+      <button type="button" class="icon-btn" data-close-dialog title="关闭">{{ icon('x') }}</button>
+    </div>
+    <label>邮箱地址 <input type="email" name="address" required placeholder="name@example.com"></label>
     <label>邮箱密码
       <span class="pw-row">
         <input type="password" name="password" autocomplete="new-password" data-password-input>
-        <button type="button" class="btn" data-toggle-password>显示</button>
-        <button type="button" class="btn" data-generate-password>生成</button>
+        <button type="button" class="icon-btn boxed" data-toggle-password title="显示/隐藏">{{ icon('eye') }}</button>
+        <button type="button" class="icon-btn boxed" data-generate-password title="生成随机密码">{{ icon('refresh') }}</button>
       </span>
     </label>
-    <label>备注 <textarea name="note" rows="2" placeholder="恢复邮箱、绑定手机号等"></textarea></label>
+    <label>备注 <textarea name="note" rows="2" placeholder="恢复邮箱、绑定手机号等（明文保存，别写密码）"></textarea></label>
     <div class="dialog-actions">
       <button type="button" class="btn" data-close-dialog>取消</button>
       <button type="submit" class="primary">保存</button>
@@ -163,24 +185,29 @@
 
 <dialog id="account-dialog">
   <form method="post">
-    <h3 data-dialog-title></h3>
+    <div class="dialog-head">
+      <h3 data-dialog-title></h3>
+      <button type="button" class="icon-btn" data-close-dialog title="关闭">{{ icon('x') }}</button>
+    </div>
     <input type="hidden" name="email_id">
-    <label>平台名称 <input type="text" name="platform" required placeholder="ChatGPT / Claude / X …"></label>
-    <label>分类
-      <select name="category">
-        {% for value, label in categories.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
-      </select>
-    </label>
+    <div class="form-row">
+      <label>平台名称 <input type="text" name="platform" required placeholder="ChatGPT / Claude / X …"></label>
+      <label>分类
+        <select name="category">
+          {% for value, label in categories.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
     <label>用户名 <input type="text" name="username" placeholder="可留空，默认用邮箱登录"></label>
     <label>平台密码
       <span class="pw-row">
         <input type="password" name="password" autocomplete="new-password" data-password-input>
-        <button type="button" class="btn" data-toggle-password>显示</button>
-        <button type="button" class="btn" data-generate-password>生成</button>
+        <button type="button" class="icon-btn boxed" data-toggle-password title="显示/隐藏">{{ icon('eye') }}</button>
+        <button type="button" class="icon-btn boxed" data-generate-password title="生成随机密码">{{ icon('refresh') }}</button>
       </span>
     </label>
-    <label>网址 <input type="text" name="url" placeholder="https://"></label>
-    <label>备注 <textarea name="note" rows="2"></textarea></label>
+    <label>网址 <input type="text" name="url" placeholder="chatgpt.com"></label>
+    <label>备注 <textarea name="note" rows="2" placeholder="明文保存，别写密码"></textarea></label>
     <div class="dialog-actions">
       <button type="button" class="btn" data-close-dialog>取消</button>
       <button type="submit" class="primary">保存</button>

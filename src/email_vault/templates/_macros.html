@@ -1,0 +1,33 @@
+{% macro icon(name) -%}
+<svg class="icon" aria-hidden="true"><use href="#i-{{ name }}"/></svg>
+{%- endmacro %}
+
+{% macro email_avatar(address, size="") -%}
+{%- set pv = address | provider -%}
+<span class="avatar {{ size }} {{ pv.css }}" title="{{ pv.name }}">{{ pv.initial }}</span>
+{%- endmacro %}
+
+{% macro secret(url, has_password) -%}
+  {%- if has_password -%}
+  <span class="secret">
+    <code data-secret>••••••••</code>
+    <button type="button" class="icon-btn" data-reveal="{{ url }}" title="显示">{{ icon('eye') }}</button>
+    <button type="button" class="icon-btn" data-copy-secret="{{ url }}" title="复制密码">{{ icon('copy') }}</button>
+  </span>
+  {%- else -%}
+  <span class="muted">未设置</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro site(url) -%}
+  {%- if url.startswith(('http://', 'https://')) -%}
+  <a href="{{ url }}" target="_blank" rel="noopener noreferrer" class="ext">{{ url.split('://', 1)[1].rstrip('/') }}{{ icon('external') }}</a>
+  {%- elif url -%}{{ url }}{%- endif -%}
+{%- endmacro %}
+
+{% macro flashes(err, msg) -%}
+<div class="toasts" data-toasts>
+  {%- if err %}<div class="toast err" role="alert">{{ err }}</div>{% endif -%}
+  {%- if msg %}<div class="toast ok" role="status">{{ msg }}</div>{% endif -%}
+</div>
+{%- endmacro %}
