@@ -4,7 +4,12 @@
 {% macro account_card(a, show_email=false) -%}
 <article class="svc" data-category="{{ a.category }}">
   <header class="svc-head">
+    {% set logo = platform_logo(a.platform, a.url) %}
+    {% if logo %}
+    <span class="avatar logo"><svg aria-hidden="true"><use href="#brand-{{ logo }}"/></svg></span>
+    {% else %}
     <span class="avatar av-{{ a.platform | color_index }}">{{ a.platform[:1] | upper }}</span>
+    {% endif %}
     <div class="svc-title">
       <h4>{{ a.platform }}</h4>
       <span class="tag tag-{{ a.category }}">{{ categories.get(a.category, a.category) }}</span>

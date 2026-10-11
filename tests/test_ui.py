@@ -19,3 +19,22 @@ def test_provider_fallbacks() -> None:
     assert ui.provider("a@163.com").logo is None  # no free logo; letter avatar
     unknown = ui.provider("a@Example.ORG")
     assert unknown.logo is None and unknown.initial == "E" and unknown.css.startswith("av-")
+
+
+def test_platform_logo_matching() -> None:
+    assert ui.platform_logo("ChatGPT") == "openai"
+    assert ui.platform_logo("B 站") == "bilibili"
+    assert (
+        ui.platform_logo("GitHub Copilot", "https://github.com/features/copilot") == "githubcopilot"
+    )
+    assert ui.platform_logo("Copilot") == "microsoft"
+    assert ui.platform_logo("My Gemini", "https://gemini.google.com/app") == "gemini"
+    assert ui.platform_logo("工作号", "https://www.x.com/home") == "x"
+    assert ui.platform_logo("Something", "https://evilx.com") is None
+    assert ui.platform_logo("Grok") is None
+
+
+def test_every_platform_logo_has_a_symbol() -> None:
+    icons = BRAND_ICONS.read_text()
+    for key in ui._PLATFORMS:
+        assert f'id="brand-{key}"' in icons, key

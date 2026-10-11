@@ -64,6 +64,7 @@ def create_app(
     templates.env.filters["provider"] = ui.provider
     templates.env.filters["color_index"] = ui.color_index
     templates.env.filters["split_address"] = ui.split_address
+    templates.env.globals["platform_logo"] = ui.platform_logo
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(allowed_hosts))
