@@ -12,15 +12,19 @@ class Provider(NamedTuple):
     name: str
     initial: str
     css: str
+    logo: str | None = None  # symbol id suffix in _brand_icons.html
 
 
 _PROVIDERS: dict[str, Provider] = {}
 for _domains, _provider in (
-    (("gmail.com", "googlemail.com"), Provider("Gmail", "G", "pv-gmail")),
-    (("outlook.com", "hotmail.com", "live.com", "msn.com"), Provider("Outlook", "O", "pv-outlook")),
-    (("proton.me", "protonmail.com", "pm.me"), Provider("Proton", "P", "pv-proton")),
-    (("icloud.com", "me.com", "mac.com"), Provider("iCloud", "i", "pv-icloud")),
-    (("qq.com", "foxmail.com"), Provider("QQ", "Q", "pv-qq")),
+    (("gmail.com", "googlemail.com"), Provider("Gmail", "G", "pv-gmail", "gmail")),
+    (
+        ("outlook.com", "hotmail.com", "live.com", "msn.com"),
+        Provider("Outlook", "O", "pv-outlook", "microsoft"),
+    ),
+    (("proton.me", "protonmail.com", "pm.me"), Provider("Proton", "P", "pv-proton", "proton")),
+    (("icloud.com", "me.com", "mac.com"), Provider("iCloud", "i", "pv-icloud", "icloud")),
+    (("qq.com", "foxmail.com"), Provider("QQ", "Q", "pv-qq", "qq")),
     (("163.com", "126.com", "yeah.net"), Provider("网易", "网", "pv-netease")),
     (("yahoo.com",), Provider("Yahoo", "Y", "pv-yahoo")),
 ):

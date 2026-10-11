@@ -39,3 +39,9 @@ uv run pytest
 uv run ruff check src tests && uv run ruff format --check src tests
 uv run mypy src
 ```
+
+## Credits
+
+Brand marks in `templates/_brand_icons.html` (CC0): Gmail and Microsoft from
+[gilbarbara/logos](https://github.com/gilbarbara/logos); Proton Mail, iCloud and QQ from
+[Simple Icons](https://simpleicons.org). Trademarks belong to their owners.
