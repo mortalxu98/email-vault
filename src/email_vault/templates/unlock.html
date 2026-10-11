@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="auth">
+  <form method="post" action="/unlock" class="card">
+    <h1>🔒 Email Vault</h1>
+    {% if err %}<p class="flash err">{{ err }}</p>{% endif %}
+    <label>主密码
+      <input type="password" name="password" required autofocus autocomplete="current-password">
+    </label>
+    <button type="submit" class="primary">解锁</button>
+  </form>
+</main>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="auth">
+  <form method="post" action="/setup" class="card">
+    <h1>设置主密码</h1>
+    <p class="hint">主密码用于加密所有密码。<strong>忘记后无法恢复</strong>，请妥善保管。</p>
+    {% if err %}<p class="flash err">{{ err }}</p>{% endif %}
+    <label>主密码（至少 {{ min_len }} 位）
+      <input type="password" name="password" minlength="{{ min_len }}" required autofocus autocomplete="new-password">
+    </label>
+    <label>确认主密码
+      <input type="password" name="confirm" minlength="{{ min_len }}" required autocomplete="new-password">
+    </label>
+    <button type="submit" class="primary">创建</button>
+  </form>
+</main>
+{% endblock %}

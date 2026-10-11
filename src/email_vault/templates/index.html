@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% macro secret(url, has_password) -%}
+  {%- if has_password -%}
+  <span class="secret">
+    <code data-secret>••••••••</code>
+    <button type="button" class="link" data-reveal="{{ url }}">显示</button>
+    <button type="button" class="link" data-copy-secret="{{ url }}">复制</button>
+  </span>
+  {%- else -%}
+  <span class="muted">—</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro site(url) -%}
+  {%- if url.startswith(('http://', 'https://')) -%}
+  <a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ url }}</a>
+  {%- elif url -%}{{ url }}{%- endif -%}
+{%- endmacro %}
+
+{% block body_attrs %}data-unlocked{% endblock %}
+
+{% block body %}
+<header class="topbar">
+  <a href="/" class="brand">🔐 Email Vault</a>
+  <form method="get" action="/" class="search">
+    <input type="search" name="q" value="{{ q }}" placeholder="搜索邮箱 / 平台，如 ChatGPT">
+  </form>
+  <a href="/export" class="btn">导出备份</a>
+  <form method="post" action="/lock"><button type="submit" class="btn">锁定</button></form>
+</header>
+
+{% if err %}<p class="flash err">{{ err }}</p>{% endif %}
+{% if msg %}<p class="flash ok">{{ msg }}</p>{% endif %}
+
+<div class="layout">
+  <aside class="sidebar">
+    <button type="button" class="primary block"
+            data-open-dialog="email-dialog" data-action="/emails" data-title="新增邮箱"
+            data-password-hint="可留空" data-fields='{}'>+ 新增邮箱</button>
+    <ul class="email-list">
+      {% for e in emails %}
+      <li>
+        <a href="/?{{ {'email_id': e.id, 'q': q} | urlencode }}"
+           class="{{ 'active' if selected and selected.id == e.id }}">
+          <span class="addr">{{ e.address }}</span>
+          <span class="count">{{ e.account_count }}</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="muted empty">{{ '没有匹配的邮箱' if q else '还没有邮箱，先新增一个' }}</li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <main class="content">
+    {% if selected %}
+    <section class="card">
+      <div class="card-head">
+        <h2>{{ selected.address }}</h2>
+        <div class="actions">
+          <button type="button" class="link" data-copy-text="{{ selected.address }}">复制地址</button>
+          <button type="button" class="link"
+                  data-open-dialog="email-dialog" data-action="/emails/{{ selected.id }}" data-title="编辑邮箱"
+                  data-password-hint="留空则不修改"
+                  data-fields='{{ {"address": selected.address, "note": selected.note} | tojson }}'>编辑</button>
+          <form method="post" action="/emails/{{ selected.id }}/delete"
+                data-confirm="删除 {{ selected.address }} 及其 {{ selected.account_count }} 个关联服务？此操作不可恢复。">
+            <button type="submit" class="link danger">删除</button>
+          </form>
+        </div>
+      </div>
+      <dl class="meta">
+        <dt>邮箱密码</dt><dd>{{ secret('/api/emails/%d/password' % selected.id, selected.has_password) }}</dd>
+        {% if selected.note %}<dt>备注</dt><dd class="note">{{ selected.note }}</dd>{% endif %}
+      </dl>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h3>关联服务（{{ accounts | length }}）</h3>
+        <button type="button" class="primary"
+                data-open-dialog="account-dialog" data-action="/accounts" data-title="新增关联服务 · {{ selected.address }}"
+                data-password-hint="可留空（如 Google 登录）"
+                data-fields='{{ {"email_id": selected.id, "category": "ai"} | tojson }}'>+ 新增服务</button>
+      </div>
+      {% if accounts %}
+      <table>
+        <thead><tr><th>平台</th><th>分类</th><th>用户名</th><th>密码</th><th>网址</th><th>备注</th><th></th></tr></thead>
+        <tbody>
+        {% for a in accounts %}
+          <tr>
+            <td class="strong">{{ a.platform }}</td>
+            <td><span class="tag tag-{{ a.category }}">{{ categories.get(a.category, a.category) }}</span></td>
+            <td>{% if a.username %}<span class="copyable" data-copy-text="{{ a.username }}" title="点击复制">{{ a.username }}</span>{% endif %}</td>
+            <td>{{ secret('/api/accounts/%d/password' % a.id, a.has_password) }}</td>
+            <td class="url">{{ site(a.url) }}</td>
+            <td class="note">{{ a.note }}</td>
+            <td class="row-actions">
+              <button type="button" class="link"
+                      data-open-dialog="account-dialog" data-action="/accounts/{{ a.id }}" data-title="编辑 {{ a.platform }}"
+                      data-password-hint="留空则不修改"
+                      data-fields='{{ {"platform": a.platform, "category": a.category, "username": a.username, "url": a.url, "note": a.note} | tojson }}'>编辑</button>
+              <form method="post" action="/accounts/{{ a.id }}/delete" data-confirm="删除 {{ a.platform }}？">
+                <button type="submit" class="link danger">删除</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="muted">这个邮箱还没有关联服务。</p>
+      {% endif %}
+    </section>
+
+    {% elif q %}
+    <section class="card">
+      <h3>搜索「{{ q }}」：{{ results | length }} 个服务</h3>
+      {% if results %}
+      <table>
+        <thead><tr><th>平台</th><th>分类</th><th>邮箱</th><th>用户名</th><th>密码</th><th>网址</th></tr></thead>
+        <tbody>
+        {% for a in results %}
+          <tr>
+            <td class="strong">{{ a.platform }}</td>
+            <td><span class="tag tag-{{ a.category }}">{{ categories.get(a.category, a.category) }}</span></td>
+            <td><a href="/?email_id={{ a.email_id }}">{{ a.email_address }}</a></td>
+            <td>{{ a.username }}</td>
+            <td>{{ secret('/api/accounts/%d/password' % a.id, a.has_password) }}</td>
+            <td class="url">{{ site(a.url) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    </section>
+
+    {% else %}
+    <section class="card"><p class="muted">从左侧新增第一个邮箱。</p></section>
+    {% endif %}
+  </main>
+</div>
+
+<dialog id="email-dialog">
+  <form method="post">
+    <h3 data-dialog-title></h3>
+    <label>邮箱地址 <input type="email" name="address" required></label>
+    <label>邮箱密码
+      <span class="pw-row">
+        <input type="password" name="password" autocomplete="new-password" data-password-input>
+        <button type="button" class="btn" data-toggle-password>显示</button>
+        <button type="button" class="btn" data-generate-password>生成</button>
+      </span>
+    </label>
+    <label>备注 <textarea name="note" rows="2" placeholder="恢复邮箱、绑定手机号等"></textarea></label>
+    <div class="dialog-actions">
+      <button type="button" class="btn" data-close-dialog>取消</button>
+      <button type="submit" class="primary">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="account-dialog">
+  <form method="post">
+    <h3 data-dialog-title></h3>
+    <input type="hidden" name="email_id">
+    <label>平台名称 <input type="text" name="platform" required placeholder="ChatGPT / Claude / X …"></label>
+    <label>分类
+      <select name="category">
+        {% for value, label in categories.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>用户名 <input type="text" name="username" placeholder="可留空，默认用邮箱登录"></label>
+    <label>平台密码
+      <span class="pw-row">
+        <input type="password" name="password" autocomplete="new-password" data-password-input>
+        <button type="button" class="btn" data-toggle-password>显示</button>
+        <button type="button" class="btn" data-generate-password>生成</button>
+      </span>
+    </label>
+    <label>网址 <input type="text" name="url" placeholder="https://"></label>
+    <label>备注 <textarea name="note" rows="2"></textarea></label>
+    <div class="dialog-actions">
+      <button type="button" class="btn" data-close-dialog>取消</button>
+      <button type="submit" class="primary">保存</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
