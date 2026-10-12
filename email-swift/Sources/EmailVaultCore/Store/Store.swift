@@ -1,0 +1,386 @@
+import Foundation
+import GRDB
+
+/// SQLite persistence matching the Python `Store` schema and behavior exactly.
+public final class Store: @unchecked Sendable {
+    public let path: URL
+    private let dbQueue: DatabaseQueue
+
+    public static let schema = """
+    CREATE TABLE IF NOT EXISTS meta (
+        key   TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS emails (
+        id           INTEGER PRIMARY KEY,
+        address      TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        password_enc BLOB,
+        note         TEXT NOT NULL DEFAULT '',
+        created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS accounts (
+        id           INTEGER PRIMARY KEY,
+        email_id     INTEGER NOT NULL REFERENCES emails(id) ON DELETE CASCADE,
+        platform     TEXT NOT NULL,
+        category     TEXT NOT NULL DEFAULT 'other',
+        username     TEXT NOT NULL DEFAULT '',
+        password_enc BLOB,
+        url          TEXT NOT NULL DEFAULT '',
+        note         TEXT NOT NULL DEFAULT '',
+        created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_accounts_email_id ON accounts(email_id);
+    """
+
+    /// Resolve DB path: `EMAIL_VAULT_DB` env wins; otherwise `~/.local/share/email-vault/vault.db`.
+    public static func defaultPath() -> URL {
+        if let override = ProcessInfo.processInfo.environment["EMAIL_VAULT_DB"], !override.isEmpty {
+            return URL(fileURLWithPath: override)
+        }
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        return home
+            .appendingPathComponent(".local/share/email-vault/vault.db")
+    }
+
+    public init(path: URL? = nil) throws {
+        let resolved = path ?? Store.defaultPath()
+        self.path = resolved
+        let dir = resolved.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        var config = Configuration()
+        config.prepareDatabase { db in
+            try db.execute(sql: "PRAGMA foreign_keys = ON")
+        }
+        dbQueue = try DatabaseQueue(path: resolved.path, configuration: config)
+        try dbQueue.write { db in
+            try db.execute(sql: Store.schema)
+        }
+        try? FileManager.default.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: resolved.path
+        )
+    }
+
+    // MARK: - LIKE escape (matches Python `_like`)
+
+    public static func likePattern(_ query: String) -> String {
+        let escaped = query
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
+        return "%\(escaped)%"
+    }
+
+    // MARK: - meta
+
+    public func getMeta(_ key: String) throws -> String? {
+        try dbQueue.read { db in
+            try String.fetchOne(db, sql: "SELECT value FROM meta WHERE key = ?", arguments: [key])
+        }
+    }
+
+    public func setMetaMany(_ values: [String: String]) throws {
+        try dbQueue.write { db in
+            for (key, value) in values {
+                try db.execute(
+                    sql: """
+                    INSERT INTO meta (key, value) VALUES (?, ?)
+                    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                    """,
+                    arguments: [key, value]
+                )
+            }
+        }
+    }
+
+    // MARK: - emails
+
+    private static let emailColumns = """
+        e.id, e.address, e.note, e.password_enc IS NOT NULL AS has_password,
+        (SELECT COUNT(*) FROM accounts a WHERE a.email_id = e.id) AS account_count
+    """
+
+    private static let accountColumns = """
+        a.id, a.email_id, e.address AS email_address, a.platform, a.category,
+        a.username, a.password_enc IS NOT NULL AS has_password, a.url, a.note
+    """
+
+    public func listEmails(query: String = "") throws -> [EmailRecord] {
+        try dbQueue.read { db in
+            var sql = "SELECT \(Self.emailColumns) FROM emails e"
+            var args: StatementArguments = []
+            if !query.isEmpty {
+                sql += """
+                     WHERE e.address LIKE ? ESCAPE '\\'
+                       OR e.note LIKE ? ESCAPE '\\'
+                       OR EXISTS (SELECT 1 FROM accounts a
+                                  WHERE a.email_id = e.id AND a.platform LIKE ? ESCAPE '\\')
+                """
+                let p = Store.likePattern(query)
+                args = [p, p, p]
+            }
+            sql += " ORDER BY e.address"
+            return try Row.fetchAll(db, sql: sql, arguments: args).map(Self.mapEmail)
+        }
+    }
+
+    public func getEmail(_ emailId: Int64) throws -> EmailRecord? {
+        try dbQueue.read { db in
+            try Row.fetchOne(
+                db,
+                sql: "SELECT \(Self.emailColumns) FROM emails e WHERE e.id = ?",
+                arguments: [emailId]
+            ).map(Self.mapEmail)
+        }
+    }
+
+    public func createEmail(address: String, note: String, passwordEnc: Data?) throws -> Int64 {
+        do {
+            return try dbQueue.write { db in
+                try db.execute(
+                    sql: "INSERT INTO emails (address, note, password_enc) VALUES (?, ?, ?)",
+                    arguments: [address, note, passwordEnc]
+                )
+                return db.lastInsertedRowID
+            }
+        } catch let error as DatabaseError where error.resultCode == .SQLITE_CONSTRAINT {
+            throw StoreError.duplicateEmail(address)
+        }
+    }
+
+    /// `passwordEnc == nil` keeps the stored password (`COALESCE`).
+    public func updateEmail(id: Int64, address: String, note: String, passwordEnc: Data?) throws {
+        do {
+            let changed = try dbQueue.write { db -> Int in
+                try db.execute(
+                    sql: """
+                    UPDATE emails
+                       SET address = ?, note = ?,
+                           password_enc = COALESCE(?, password_enc),
+                           updated_at = datetime('now')
+                     WHERE id = ?
+                    """,
+                    arguments: [address, note, passwordEnc, id]
+                )
+                return db.changesCount
+            }
+            if changed == 0 { throw StoreError.notFound(id) }
+        } catch let error as DatabaseError where error.resultCode == .SQLITE_CONSTRAINT {
+            throw StoreError.duplicateEmail(address)
+        }
+    }
+
+    public func deleteEmail(_ emailId: Int64) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "DELETE FROM emails WHERE id = ?", arguments: [emailId])
+        }
+    }
+
+    public func getEmailPassword(_ emailId: Int64) throws -> Data? {
+        try dbQueue.read { db in
+            guard let row = try Row.fetchOne(
+                db,
+                sql: "SELECT password_enc FROM emails WHERE id = ?",
+                arguments: [emailId]
+            ) else {
+                throw StoreError.notFound(emailId)
+            }
+            return row["password_enc"] as Data?
+        }
+    }
+
+    // MARK: - accounts
+
+    public func listAccounts(emailId: Int64) throws -> [AccountRecord] {
+        try dbQueue.read { db in
+            try Row.fetchAll(
+                db,
+                sql: """
+                SELECT \(Self.accountColumns)
+                  FROM accounts a JOIN emails e ON e.id = a.email_id
+                 WHERE a.email_id = ?
+                 ORDER BY a.category, a.platform COLLATE NOCASE
+                """,
+                arguments: [emailId]
+            ).map(Self.mapAccount)
+        }
+    }
+
+    public func searchAccounts(query: String) throws -> [AccountRecord] {
+        let p = Store.likePattern(query)
+        return try dbQueue.read { db in
+            try Row.fetchAll(
+                db,
+                sql: """
+                SELECT \(Self.accountColumns)
+                  FROM accounts a JOIN emails e ON e.id = a.email_id
+                 WHERE a.platform LIKE ? ESCAPE '\\'
+                    OR a.username LIKE ? ESCAPE '\\'
+                    OR a.note LIKE ? ESCAPE '\\'
+                    OR e.address LIKE ? ESCAPE '\\'
+                 ORDER BY a.platform COLLATE NOCASE, e.address
+                """,
+                arguments: [p, p, p, p]
+            ).map(Self.mapAccount)
+        }
+    }
+
+    public func stats() throws -> Stats {
+        try dbQueue.read { db in
+            let emails = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM emails") ?? 0
+            let row = try Row.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) AS total, COUNT(*) - COUNT(password_enc) AS without_pw FROM accounts"
+            )!
+            let accounts: Int = row["total"]
+            let without: Int = row["without_pw"]
+            var byCategory: [String: Int] = [:]
+            let catRows = try Row.fetchAll(db, sql: "SELECT category, COUNT(*) AS c FROM accounts GROUP BY category")
+            for r in catRows {
+                let cat: String = r["category"]
+                let c: Int = r["c"]
+                byCategory[cat] = c
+            }
+            return Stats(emails: emails, accounts: accounts, withoutPassword: without, byCategory: byCategory)
+        }
+    }
+
+    /// (platform, category, url) per platform name from its most recent account.
+    public func distinctPlatforms() throws -> [(String, String, String)] {
+        try dbQueue.read { db in
+            try Row.fetchAll(
+                db,
+                sql: """
+                SELECT platform, category, url, MAX(id)
+                  FROM accounts GROUP BY lower(platform) ORDER BY platform COLLATE NOCASE
+                """
+            ).map { row in
+                (row["platform"] as String, row["category"] as String, row["url"] as String)
+            }
+        }
+    }
+
+    public func getAccount(_ accountId: Int64) throws -> AccountRecord? {
+        try dbQueue.read { db in
+            try Row.fetchOne(
+                db,
+                sql: """
+                SELECT \(Self.accountColumns)
+                  FROM accounts a JOIN emails e ON e.id = a.email_id
+                 WHERE a.id = ?
+                """,
+                arguments: [accountId]
+            ).map(Self.mapAccount)
+        }
+    }
+
+    public func createAccount(
+        emailId: Int64,
+        platform: String,
+        category: String,
+        username: String,
+        url: String,
+        note: String,
+        passwordEnc: Data?
+    ) throws -> Int64 {
+        do {
+            return try dbQueue.write { db in
+                try db.execute(
+                    sql: """
+                    INSERT INTO accounts
+                       (email_id, platform, category, username, url, note, password_enc)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    arguments: [emailId, platform, category, username, url, note, passwordEnc]
+                )
+                return db.lastInsertedRowID
+            }
+        } catch let error as DatabaseError where error.resultCode == .SQLITE_CONSTRAINT {
+            throw StoreError.notFound(emailId)
+        }
+    }
+
+    /// `passwordEnc == nil` keeps the stored password.
+    public func updateAccount(
+        id: Int64,
+        platform: String,
+        category: String,
+        username: String,
+        url: String,
+        note: String,
+        passwordEnc: Data?
+    ) throws {
+        let changed = try dbQueue.write { db -> Int in
+            try db.execute(
+                sql: """
+                UPDATE accounts
+                   SET platform = ?, category = ?, username = ?, url = ?, note = ?,
+                       password_enc = COALESCE(?, password_enc),
+                       updated_at = datetime('now')
+                 WHERE id = ?
+                """,
+                arguments: [platform, category, username, url, note, passwordEnc, id]
+            )
+            return db.changesCount
+        }
+        if changed == 0 { throw StoreError.notFound(id) }
+    }
+
+    public func deleteAccount(_ accountId: Int64) throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "DELETE FROM accounts WHERE id = ?", arguments: [accountId])
+        }
+    }
+
+    public func getAccountPassword(_ accountId: Int64) throws -> Data? {
+        try dbQueue.read { db in
+            guard let row = try Row.fetchOne(
+                db,
+                sql: "SELECT password_enc FROM accounts WHERE id = ?",
+                arguments: [accountId]
+            ) else {
+                throw StoreError.notFound(accountId)
+            }
+            return row["password_enc"] as Data?
+        }
+    }
+
+    // MARK: - backup
+
+    /// Consistent snapshot via SQLite backup API (passwords stay encrypted).
+    public func export(to destination: URL) throws {
+        try dbQueue.backup(to: DatabaseQueue(path: destination.path))
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: destination.path
+        )
+    }
+
+    // MARK: - mapping
+
+    private static func mapEmail(_ row: Row) -> EmailRecord {
+        EmailRecord(
+            id: row["id"],
+            address: row["address"],
+            note: row["note"],
+            hasPassword: (row["has_password"] as Int64) != 0,
+            accountCount: Int(row["account_count"] as Int64)
+        )
+    }
+
+    private static func mapAccount(_ row: Row) -> AccountRecord {
+        AccountRecord(
+            id: row["id"],
+            emailId: row["email_id"],
+            emailAddress: row["email_address"],
+            platform: row["platform"],
+            category: row["category"],
+            username: row["username"],
+            hasPassword: (row["has_password"] as Int64) != 0,
+            url: row["url"],
+            note: row["note"]
+        )
+    }
+}
