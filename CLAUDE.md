@@ -1,16 +1,14 @@
 # email-vault
 
-Local-only password vault: email ↔ platform accounts, FastAPI + Jinja2 + SQLite, no frontend build.
+Local-only password vault: email ↔ platform accounts. Native macOS SwiftUI app in `email-swift/` (SwiftPM, no Xcode project).
 
-- `src/email_vault/crypto.py` – Argon2id KDF, AES-GCM field encryption
-- `src/email_vault/auth.py` – master password verifier, in-memory sessions with idle expiry
-- `src/email_vault/store.py` – SQLite access; password columns hold ciphertext only
-- `src/email_vault/app.py` – routes, security middleware
-- `src/email_vault/desktop.py` – macOS app shell (pywebview); `scripts/build_macos_app.sh` builds it
-- `templates/`, `static/` – server-rendered UI, vanilla JS (CSP forbids inline script/style)
+- `email-swift/Sources/EmailVaultCore/` – crypto (Argon2id KDF, AES-GCM), vault auth, SQLite store, platform catalog
+- `email-swift/Sources/EmailVaultApp/` – SwiftUI views and app model
+- `email-swift/Sources/CArgon2/` – vendored reference Argon2
+- `email-swift/scripts/build.sh` – builds `email-swift/dist/Email Vault.app`; uses `assets/EmailVault.icns`
+- `docs/swift-rewrite-prompt.md` – DB schema and crypto test vectors; the on-disk format must stay compatible
 
 Rules:
-- Never log or persist plaintext passwords; decrypt only in `/api/*/password` responses.
-- Keep binding to 127.0.0.1. Don't relax the CSP (no unsafe-eval/inline); desktop features go through `/native/*` routes.
+- Never log or persist plaintext passwords.
 - Never touch the real DB (`~/.local/share/email-vault/vault.db`); use a temp `EMAIL_VAULT_DB` for manual tests.
-- Before committing: `uv run pytest && uv run ruff check src tests && uv run mypy src`.
+- Before committing: `cd email-swift && swift build` (`swift test` needs full Xcode/XCTest, not available here).
