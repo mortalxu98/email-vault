@@ -1,80 +1,80 @@
-# Email Vault (Swift) — Design Notes
+# Email Vault（Swift 版）— 设计说明
 
-## Goals
+## 目标
 
-Native macOS 14+ SwiftUI rewrite of the Python Email Vault, **byte-compatible** with existing `vault.db` (Argon2id + AES-256-GCM, unchanged schema).
+用 SwiftUI 把 Python 版 Email Vault 重写为 macOS 14+ 原生应用，与现有 `vault.db` **逐字节兼容**（Argon2id + AES-256-GCM，表结构不变）。
 
-## Decisions (approved)
+## 已确认的决策
 
-1. **No App Sandbox** — default DB path `~/.local/share/email-vault/vault.db` (override with `EMAIL_VAULT_DB`).
-2. **Argon2id** via vendored official C reference (`Sources/CArgon2`, PHC winner), wrapped as SPM C target.
-3. **SQLite** via GRDB.swift; `PRAGMA foreign_keys = ON` on every connection.
-4. New code only under `email-swift/`; Python tree is read-only reference.
-5. Reports to parent in Chinese; code/comments/commits in English.
+1. **不启用 App Sandbox** — 默认数据库路径 `~/.local/share/email-vault/vault.db`（可用 `EMAIL_VAULT_DB` 覆盖）。
+2. **Argon2id** 使用内置的官方 C 参考实现（`Sources/CArgon2`，PHC 冠军算法），封装成 SPM 的 C target。
+3. **SQLite** 通过 GRDB.swift 访问；每个连接都执行 `PRAGMA foreign_keys = ON`。
+4. 新代码只放在 `email-swift/` 下；Python 代码仅作只读参考（现已删除）。
+5. 汇报用中文；代码、注释、commit 用英文。
 
-## Package layout
+## 目录结构
 
 ```
 email-swift/
   Package.swift
   Sources/
-    CArgon2/           # libargon2 reference (ARGON2_NO_THREADS)
-    EmailVaultCore/    # crypto, auth, store, platforms (Linux-testable)
-    EmailVaultApp/     # SwiftUI macOS app (#if os(macOS))
+    CArgon2/           # libargon2 参考实现（ARGON2_NO_THREADS）
+    EmailVaultCore/    # 加密、认证、存储、平台目录（可在 Linux 上测试）
+    EmailVaultApp/     # SwiftUI macOS 应用（#if os(macOS)）
   Tests/EmailVaultCoreTests/
   scripts/build.sh
   docs/
-  BrandIcons/          # SVG symbols copied from Python _brand_icons.html
+  BrandIcons/          # 从 Python 版 _brand_icons.html 拷来的 SVG 图标
 ```
 
-## Crypto
+## 加密
 
-| Piece | Implementation |
+| 组件 | 实现 |
 |-------|----------------|
-| KDF | `argon2id_hash_raw` v0x13, params from JSON |
-| AEAD | `AES.GCM` via [swift-crypto](https://github.com/apple/swift-crypto) (`Crypto` module) — same `SealedBox.combined` = nonce(12)\|\|ciphertext\|\|tag(16) as CryptoKit |
-| Verifier | Encrypt `"email-vault-verifier-v1"`; store hex in `meta.key_verifier` |
+| 密钥派生 | `argon2id_hash_raw` v0x13，参数取自 JSON |
+| AEAD | `AES.GCM`，用 [swift-crypto](https://github.com/apple/swift-crypto)（`Crypto` 模块）— `SealedBox.combined` 格式与 CryptoKit 相同：nonce(12)\|\|密文\|\|tag(16) |
+| 校验值 | 加密 `"email-vault-verifier-v1"`，hex 存到 `meta.key_verifier` |
 
-On Apple platforms swift-crypto uses CryptoKit underneath; on Linux it provides a portable implementation so Core unit tests can run without Xcode.
+在 Apple 平台上 swift-crypto 底层就是 CryptoKit；在 Linux 上提供可移植实现，因此 Core 的单元测试不需要 Xcode。
 
-## Store
+## 存储
 
-Schema identical to Python. Blank password on edit → SQL `COALESCE(?, password_enc)` (pass Swift `nil`). LIKE queries escape `\`, `%`, `_`. Cascade delete via FK.
+表结构与 Python 版一致。编辑时密码留空 → SQL `COALESCE(?, password_enc)`（Swift 传 `nil`），不覆盖旧密码。LIKE 查询会转义 `\`、`%`、`_`。删除靠外键级联。
 
-## UI (SwiftUI)
+## 界面（SwiftUI）
 
-- Sidebar: search, new email, provider-grouped list, export + lock.
-- Detail: stats cards, email header, category chips, grid/list accounts, platform autocomplete (score rules from `app.js`).
-- Security: idle lock 10 min, ⌘L lock, concealed pasteboard + 30s clear.
-- Brand logos: load `brand-<id>.pdf` from `Bundle.module` (`Sources/EmailVaultApp/Resources/BrandIcons`, extracted from `_brand_icons.html`); else letter avatar (`crc32 % 8`). Wide logos: okx/meta. Apple mark is black/template for iCloud.
-- Idle lock: 10 min; `touch()` on mouse/keyboard via local NSEvent monitor + Timer.
-- Copy toast: 「已复制到剪贴板」.
-- List view: compact table rows (platform / username / password / url), not stacked cards.
-- UI strings: Chinese categories (AI 工具/社交/加密货币/其他) and common buttons.
-- Unlock/setup: Argon2 runs off the main actor via `Task.detached`.
+- 侧边栏：搜索、新建邮箱、按邮箱服务商分组的列表、导出备份 + 锁定。
+- 详情页：统计卡片、邮箱信息头、分类标签、账号网格/列表视图、平台名自动补全（打分规则沿用 `app.js`）。
+- 安全：闲置 10 分钟自动锁定，⌘L 立即锁定，剪贴板内容标记为隐藏并在 30 秒后清空。
+- 品牌图标：从 `Bundle.module` 加载 `brand-<id>.pdf`（位于 `Sources/EmailVaultApp/Resources/BrandIcons`，由 `_brand_icons.html` 提取）；没有图标时显示首字母头像（颜色取 `crc32 % 8`）。宽图标：okx/meta。Apple 图标在 iCloud 上用黑色模板图。
+- 闲置锁定：10 分钟；通过本地 NSEvent 监听鼠标/键盘调用 `touch()`，配合 Timer 计时。
+- 复制提示：「已复制到剪贴板」。
+- 列表视图：紧凑的表格行（平台 / 用户名 / 密码 / 网址），不是堆叠卡片。
+- 界面文字：中文分类（AI 工具/社交/加密货币/其他）和常用按钮。
+- 解锁/初始化：Argon2 通过 `Task.detached` 在主 actor 之外运行。
 
-## Linux vs Mac
+## Linux 与 Mac 对比
 
-| | Linux (this box) | Mac |
+| | Linux（最初开发机） | Mac |
 |--|------------------|-----|
-| `swift test` (Core) | Yes (Argon2 + AES via swift-crypto + GRDB) | Yes |
-| SwiftUI app | Stub `@main` prints error | Full UI |
-| `scripts/build.sh` | `--dry-run` only useful | Produces `dist/Email Vault.app` |
+| `swift test`（Core） | 可以（Argon2 + swift-crypto 的 AES + GRDB） | 可以 |
+| SwiftUI 应用 | `@main` 是占位，只打印错误 | 完整界面 |
+| `scripts/build.sh` | 只有 `--dry-run` 有意义 | 生成 `dist/Email Vault.app` |
 
-## Safety
+## 安全
 
-- Never touch real `~/.local/share/email-vault/vault.db` in tests; always set `EMAIL_VAULT_DB`.
-- Acceptance: user copies vault.db to a temp path and unlocks the copy.
+- 测试中绝不碰真实的 `~/.local/share/email-vault/vault.db`，一律设置 `EMAIL_VAULT_DB`。
+- 验收：用户把 vault.db 复制到临时路径，解锁这份副本。
 
-## Linux test harness notes
+## Linux 测试环境说明
 
-- **swift-crypto** provides the `Crypto` module (AES-GCM) on Linux; on Apple it uses CryptoKit under the hood. Same `SealedBox.combined` layout.
-- **GRDB** links system `libsqlite3`. Debian’s build lacks `SQLITE_ENABLE_SNAPSHOT`, so on Linux only we compile `Sources/SQLiteSnapshotStubs` (unused stubs) so the linker succeeds. macOS does not include that target.
-- SwiftUI app sources are wrapped in `#if os(macOS)`; on Linux `@main` is a CLI stub that exits with a message.
-- Brand SVG symbols live in `BrandIcons/_brand_icons.html` (from Python). PDFs are generated by `scripts/extract_brand_icons.py` into `Sources/EmailVaultApp/Resources/BrandIcons/` and loaded by `BrandIcon.image(named:)` via `Bundle.module`.
+- **swift-crypto** 在 Linux 上提供 `Crypto` 模块（AES-GCM）；在 Apple 平台底层用 CryptoKit，`SealedBox.combined` 布局相同。
+- **GRDB** 链接系统的 `libsqlite3`。Debian 的版本没开 `SQLITE_ENABLE_SNAPSHOT`，所以仅在 Linux 上编译 `Sources/SQLiteSnapshotStubs`（不会被调用的桩函数）让链接通过。macOS 不包含这个 target。
+- SwiftUI 应用代码都包在 `#if os(macOS)` 里；Linux 上 `@main` 是命令行占位程序，打印提示后退出。
+- 品牌 SVG 图标放在 `BrandIcons/_brand_icons.html`（来自 Python 版）。PDF 由 `scripts/extract_brand_icons.py` 生成到 `Sources/EmailVaultApp/Resources/BrandIcons/`，通过 `BrandIcon.image(named:)` 从 `Bundle.module` 加载。
 
-## Next step on Mac
+## 在 Mac 上的后续步骤
 
 1. `cd email-swift && swift test && ./scripts/build.sh`
-2. Follow `docs/ACCEPTANCE.md` with a **copy** of `vault.db`.
-3. Brand PDFs are already bundled; re-run `python3 scripts/extract_brand_icons.py` after updating `_brand_icons.html`.
+2. 按 `docs/ACCEPTANCE.md` 操作，使用 `vault.db` 的**副本**。
+3. 品牌 PDF 已打包；修改 `_brand_icons.html` 后重新运行 `python3 scripts/extract_brand_icons.py`。

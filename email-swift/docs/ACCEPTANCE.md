@@ -1,61 +1,62 @@
-# Acceptance checklist (on your Mac)
+# 验收清单（在你的 Mac 上）
 
-Do **not** unlock or write the live vault until steps 1–2 pass. Always use a **copy** of `vault.db` for step 3.
+第 1–2 步通过之前，**不要**解锁或写入正在使用的数据库。第 3 步一律用 `vault.db` 的**副本**。
 
-## 1. Build & unit tests
+注意：`open` 启动的应用**不会继承**当前 shell 的环境变量，必须用 `open --env` 显式传入 `EMAIL_VAULT_DB`，否则应用会打开真实数据库。
+
+## 1. 构建与单元测试
 
 ```bash
 cd /path/to/email-swift
 swift test
-# Expect: CryptoTests, StoreTests, PlatformTests all green
-# (Argon2 test vectors, unlock, encrypt roundtrip, blank password,
-#  cascade delete, LIKE escape, platform logo matching)
+# 预期：CryptoTests、StoreTests、PlatformTests 全部通过
+# （Argon2 测试向量、解锁、加解密往返、空密码、
+#   级联删除、LIKE 转义、平台图标匹配）
 ```
 
 ```bash
 ./scripts/build.sh
-# Produces: dist/Email Vault.app
-open "dist/Email Vault.app"
+# 生成：dist/Email Vault.app
 ```
 
-Optional dry-run (no compile):
+只看命令、不编译：
 
 ```bash
 ./scripts/build.sh --dry-run
 ```
 
-## 2. Temporary vault smoke test
+## 2. 临时数据库冒烟测试
 
 ```bash
 export EMAIL_VAULT_DB="/tmp/email-vault-smoke.db"
 rm -f "$EMAIL_VAULT_DB"
-open "dist/Email Vault.app"
-# Set master password (≥8 chars), add an email + service, lock, unlock again.
-# Confirm passwords show/copy; blank edit keeps old password.
+open --env "EMAIL_VAULT_DB=$EMAIL_VAULT_DB" "dist/Email Vault.app"
+# 设置主密码（≥8 位），添加一个邮箱和一个服务，锁定，再解锁。
+# 确认密码能显示/复制；编辑时密码留空会保留旧密码。
 ```
 
-## 3. Real data — COPY only
+## 3. 真实数据 — 只用副本
 
 ```bash
-# Copy — never point the app at the live file for first verification
+# 复制一份 — 首次验证绝不让应用直接打开真实文件
 mkdir -p /tmp/email-vault-accept
 cp ~/.local/share/email-vault/vault.db /tmp/email-vault-accept/vault.db
 chmod 600 /tmp/email-vault-accept/vault.db
 export EMAIL_VAULT_DB="/tmp/email-vault-accept/vault.db"
-open "dist/Email Vault.app"
+open --env "EMAIL_VAULT_DB=$EMAIL_VAULT_DB" "dist/Email Vault.app"
 ```
 
-1. Unlock with your **existing** master password.
-2. Compare email count and service count with what you expect from the original DB.
-3. Spot-check a few passwords (reveal/copy).
-4. Confirm provider grouping and platform icons look right.
+1. 用**现有**主密码解锁。
+2. 核对邮箱数和服务数是否与原数据库一致。
+3. 抽查几个密码（显示/复制）。
+4. 确认邮箱服务商分组和平台图标显示正常。
 
-Only after that matches, you may launch without `EMAIL_VAULT_DB` so the app opens `~/.local/share/email-vault/vault.db` directly (no sandbox).
+以上都对得上之后，才可以不带 `EMAIL_VAULT_DB` 启动，让应用直接打开 `~/.local/share/email-vault/vault.db`（未启用沙盒）。
 
-## 4. Regression reminders
+## 4. 回归检查要点
 
-- Wrong master password: ~1s delay, no unlock.
-- Idle ~10 minutes → auto lock (⌘L forces lock).
-- Export Backup → SQLite file, passwords still encrypted, mode 600.
-- Edit service / email with empty password field → does not overwrite.
-- Delete email → accounts cascade away.
+- 主密码错误：约 1 秒延迟，不解锁。
+- 闲置约 10 分钟 → 自动锁定（⌘L 立即锁定）。
+- 导出备份 → 得到 SQLite 文件，密码仍是密文，权限 600。
+- 编辑服务/邮箱时密码栏留空 → 不覆盖旧密码。
+- 删除邮箱 → 其下账号级联删除。
