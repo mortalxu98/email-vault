@@ -1,42 +1,45 @@
 # email-vault
 
-Local-only password vault for tracking which email registered which platform,
-with encrypted email/platform passwords. Native macOS SwiftUI app in `email-swift/`.
+纯本地的密码库，用来记录哪个邮箱注册了哪些平台，邮箱密码和平台密码都加密保存。
+macOS 原生 SwiftUI 应用，代码在 `email-swift/`。
 
-The original Python web version was removed; the Swift app reads the same database format
-(schema and test vectors: `docs/swift-rewrite-prompt.md`).
+原来的 Python 网页版已删除。Swift 版读写的数据库格式与它完全一致
+（表结构和加密测试向量见 `docs/swift-rewrite-prompt.md`）。
 
-## Build
+## 构建
 
 ```bash
 cd email-swift
-./scripts/build.sh            # -> email-swift/dist/Email Vault.app
-./scripts/build.sh --dry-run
+./scripts/build.sh            # 生成 email-swift/dist/Email Vault.app
+./scripts/build.sh --dry-run  # 只打印命令，不构建
 ```
 
-Install: copy `dist/Email Vault.app` to `/Applications`. The build is unsigned.
+安装：把 `dist/Email Vault.app` 拷到 `/Applications`。构建产物未签名。
 
-| Env var | Default | Meaning |
+| 环境变量 | 默认值 | 说明 |
 |---|---|---|
-| `EMAIL_VAULT_DB` | `~/.local/share/email-vault/vault.db` | SQLite file |
+| `EMAIL_VAULT_DB` | `~/.local/share/email-vault/vault.db` | SQLite 数据库文件 |
 
-First launch asks for a master password. **It cannot be recovered if lost.**
+首次启动需要设置主密码。**主密码丢失后无法找回。**
 
-## Security model
+## 安全模型
 
-- Key = Argon2id(master password, random salt); passwords encrypted with AES-256-GCM.
-  Only password fields are encrypted — addresses, platforms and notes are plaintext.
-  Don't put secrets in notes.
-- Key lives only in memory; idle timeout or lock drops it.
+- 密钥 = Argon2id(主密码, 随机 salt)，密码用 AES-256-GCM 加密。
+  只加密密码字段，邮箱地址、平台名、备注都是明文，方便搜索。不要把机密写进备注。
+- 密钥只存在内存中，闲置超时或手动锁定后即清除。
 
-## Backup / restore
+## 备份 / 恢复
 
-Passwords stay encrypted in the SQLite file. Back up with
-`sqlite3 ~/.local/share/email-vault/vault.db ".backup <dest>"`.
-Restore: quit the app, replace the file, relaunch. The same master password is required.
+数据库文件里的密码始终是密文。备份：
 
-## Credits
+```bash
+sqlite3 ~/.local/share/email-vault/vault.db ".backup <目标路径>"
+```
 
-Brand marks come from two CC0 sets: [gilbarbara/logos](https://github.com/gilbarbara/logos)
-and [Simple Icons](https://simpleicons.org). Trademarks belong to their owners.
-See `email-swift/Sources/EmailVaultApp/Resources/README.md`.
+恢复：退出应用，替换数据库文件，重新打开。需要使用原来的主密码。
+
+## 致谢
+
+品牌图标来自两个 CC0 图标集：[gilbarbara/logos](https://github.com/gilbarbara/logos)
+和 [Simple Icons](https://simpleicons.org)。商标归各自所有者。
+详见 `email-swift/Sources/EmailVaultApp/Resources/README.md`。
