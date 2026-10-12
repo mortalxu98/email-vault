@@ -52,7 +52,7 @@ run swift package resolve
 BUILT=""
 CONFIG_LOWER=$(echo "$CONFIGURATION" | tr '[:upper:]' '[:lower:]')
 
-if command -v xcodebuild >/dev/null 2>&1; then
+if xcodebuild -version >/dev/null 2>&1; then
   echo "==> xcodebuild ($CONFIGURATION) via Swift Package"
   DERIVED="$ROOT/.build/DerivedData"
   run mkdir -p "$DERIVED"
@@ -132,15 +132,9 @@ else
   fi
   cp "$BUILT" "$MACOS/Email Vault"
   chmod 755 "$MACOS/Email Vault"
-  # SPM resource bundle must sit next to Bundle.main (Contents/) for Bundle.module.
-  RES_BUNDLE="$(dirname "$BUILT")/EmailVault_EmailVaultApp.resources"
-  if [[ -d "$RES_BUNDLE" ]]; then
-    rm -rf "$CONTENTS/EmailVault_EmailVaultApp.resources"
-    cp -R "$RES_BUNDLE" "$CONTENTS/EmailVault_EmailVaultApp.resources"
-  fi
 fi
 
-# Bundle brand PDF assets (SPM also embeds them via Bundle.module).
+# Brand PDFs: the app reads Contents/Resources/BrandIcons (no SPM Bundle.module in .app).
 BRAND_PDFS="$ROOT/Sources/EmailVaultApp/Resources/BrandIcons"
 if [[ -d "$BRAND_PDFS" ]]; then
   run mkdir -p "$RESOURCES/BrandIcons"

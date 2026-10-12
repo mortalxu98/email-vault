@@ -73,20 +73,23 @@ enum BrandIcon {
     }
 
     private static func loadNSImage(name: String) -> NSImage? {
-        // 1) SPM Bundle.module (flattened or BrandIcons/ subdir).
-        let moduleCandidates: [URL?] = [
-            Bundle.module.url(forResource: name, withExtension: "pdf", subdirectory: "BrandIcons"),
-            Bundle.module.url(forResource: name, withExtension: "pdf"),
-        ]
-        for url in moduleCandidates.compactMap({ $0 }) {
-            if let img = NSImage(contentsOf: url) { return img }
-        }
-        // 2) App Contents/Resources/BrandIcons (scripts/build.sh).
+        // 1) App Contents/Resources/BrandIcons (scripts/build.sh).
         if let res = Bundle.main.resourceURL?
             .appendingPathComponent("BrandIcons", isDirectory: true)
             .appendingPathComponent("\(name).pdf"),
            let img = NSImage(contentsOf: res) {
             return img
+        }
+        // 2) SPM Bundle.module, only outside a .app (`swift run`): its accessor
+        //    fatalErrors when the bundle is missing, which it is inside dist/*.app.
+        if Bundle.main.bundleURL.pathExtension != "app" {
+            let moduleCandidates: [URL?] = [
+                Bundle.module.url(forResource: name, withExtension: "pdf", subdirectory: "BrandIcons"),
+                Bundle.module.url(forResource: name, withExtension: "pdf"),
+            ]
+            for url in moduleCandidates.compactMap({ $0 }) {
+                if let img = NSImage(contentsOf: url) { return img }
+            }
         }
         // 3) Asset catalog / named image.
         return NSImage(named: name)
