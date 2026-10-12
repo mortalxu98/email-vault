@@ -108,9 +108,11 @@ final class AppModel: ObservableObject {
                 try vault.unlock(password: password)
             }.value
             finishUnlock(key: k)
-        } catch {
+        } catch VaultError.invalidMasterPassword {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             errorMessage = L10n.wrongPassword
+        } catch {
+            errorMessage = "解锁失败：\(error)"
         }
     }
 
