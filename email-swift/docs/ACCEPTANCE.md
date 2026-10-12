@@ -46,7 +46,7 @@ open "dist/Email Vault.app"
 ```
 
 1. Unlock with your **existing** master password.
-2. Compare email count and service count with the Python app (same DB copy or Python against the original).
+2. Compare email count and service count with what you expect from the original DB.
 3. Spot-check a few passwords (reveal/copy).
 4. Confirm provider grouping and platform icons look right.
 
