@@ -97,6 +97,8 @@ else
   <string>en</string>
   <key>CFBundleExecutable</key>
   <string>Email Vault</string>
+  <key>CFBundleIconFile</key>
+  <string>EmailVault</string>
   <key>CFBundleIdentifier</key>
   <string>local.email-vault</string>
   <key>CFBundleInfoDictionaryVersion</key>
@@ -132,6 +134,14 @@ else
   fi
   cp "$BUILT" "$MACOS/Email Vault"
   chmod 755 "$MACOS/Email Vault"
+fi
+
+# App icon, shared with the Python build.
+ICON="$ROOT/../assets/EmailVault.icns"
+if [[ -f "$ICON" ]]; then
+  run cp "$ICON" "$RESOURCES/EmailVault.icns"
+else
+  echo "warning: $ICON not found; app will use the generic icon" >&2
 fi
 
 # Brand PDFs: the app reads Contents/Resources/BrandIcons (no SPM Bundle.module in .app).
