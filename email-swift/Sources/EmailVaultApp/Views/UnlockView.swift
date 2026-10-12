@@ -11,8 +11,7 @@ struct UnlockView: View {
                 .font(.largeTitle.bold())
             Text(L10n.unlock)
                 .font(.title2)
-            SecureField(L10n.masterPassword, text: $password)
-                .textFieldStyle(.roundedBorder)
+            RevealableSecureField(L10n.masterPassword, text: $password)
                 .frame(maxWidth: 320)
                 .onSubmit { Task { await unlock() } }
                 .disabled(model.isBusy)

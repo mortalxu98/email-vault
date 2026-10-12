@@ -109,6 +109,41 @@ enum PasswordGenerator {
     }
 }
 
+/// Secure field with an eye button to show/hide the text; keeps focus when toggling.
+struct RevealableSecureField: View {
+    let placeholder: String
+    @Binding var text: String
+    @State private var visible = false
+    @FocusState private var focused: Bool
+
+    init(_ placeholder: String, text: Binding<String>) {
+        self.placeholder = placeholder
+        self._text = text
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Group {
+                if visible {
+                    TextField(placeholder, text: $text)
+                } else {
+                    SecureField(placeholder, text: $text)
+                }
+            }
+            .textFieldStyle(.roundedBorder)
+            .focused($focused)
+            Button {
+                visible.toggle()
+                focused = true
+            } label: {
+                Image(systemName: visible ? "eye.slash" : "eye")
+            }
+            .buttonStyle(.borderless)
+            .help(visible ? "隐藏" : "显示")
+        }
+    }
+}
+
 struct ToastOverlay: View {
     let message: String?
 
