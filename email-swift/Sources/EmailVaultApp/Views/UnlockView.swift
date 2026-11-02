@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import SwiftUI
 
 struct UnlockView: View {
@@ -23,6 +24,19 @@ struct UnlockView: View {
             }
             .keyboardShortcut(.defaultAction)
             .disabled(model.isBusy || password.isEmpty)
+            if model.touchIDEnabled {
+                Button {
+                    Task { await model.unlockWithTouchID() }
+                } label: {
+                    Label("使用 Touch ID 解锁", systemImage: "touchid")
+                }
+                .buttonStyle(.link)
+                .disabled(model.isBusy)
+            }
+        }
+        .onAppear { model.autoTouchID() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            model.autoTouchID()
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

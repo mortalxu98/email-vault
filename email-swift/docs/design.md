@@ -43,6 +43,8 @@ email-swift/
 
 修改主密码：校验当前密码 → 新 salt 派生新密钥 → 备份 → 单事务内重加密 `Store.encryptedColumns` 中的所有密文并写入新 `kdf_params`/`key_verifier`，任一条解密失败整体回滚。
 
+Touch ID 解锁（可选，工具栏「…」里开关）：用 CryptoKit 在 Secure Enclave 生成 P-256 密钥（`.privateKeyUsage` + `.biometryCurrentSet`），ECDH + HKDF-SHA256 + AES-GCM 封装保险箱密钥，存到库旁的 `<库名>.touchid.json`（0600，不进 `vault.db`/备份）。不走钥匙串，因为未签名 App 用带生物识别 ACL 的 data-protection keychain 会报 `-34018`。解锁时先 `evaluatePolicy` 再用已认证的 `LAContext` 做 ECDH，解出的密钥用 `key_verifier` 校验。每 14 天必须输一次主密码；改主密码后用 SE 公钥重新封装（无需验证）；指纹变动导致 SE 密钥失效时自动关闭。
+
 系统事件锁定：睡眠、屏幕休眠、锁屏、屏保启动、切换用户时立即锁定。
 
 续费提醒：到期日减去今天 ≤ 提前天数（含已过期）时，详情区顶部显示提醒横幅；「已续费」按周期顺延（月末自动对齐，如 1/31 → 2/28），一次性的直接移除提醒。

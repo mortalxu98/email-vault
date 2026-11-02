@@ -41,6 +41,13 @@ struct MainView: View {
                     Menu {
                         Button("导出备份…") { exportBackup() }
                         Button("修改主密码…") { model.showChangePassword = true }
+                        if model.touchIDAvailable {
+                            Divider()
+                            Toggle("使用 Touch ID 解锁", isOn: Binding(
+                                get: { model.touchIDEnabled },
+                                set: { $0 ? model.enableTouchID() : model.disableTouchID() }
+                            ))
+                        }
                     } label: {
                         Label("更多", systemImage: "ellipsis.circle")
                     }

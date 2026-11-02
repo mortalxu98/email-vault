@@ -4,6 +4,7 @@ import Foundation
 import SwiftUI
 import Crypto
 import EmailVaultCore
+import LocalAuthentication
 
 @MainActor
 final class AppModel: ObservableObject {
@@ -30,6 +31,8 @@ final class AppModel: ObservableObject {
     @Published var categoryFilter: String = "all"
     @Published var isBusy = false
     @Published var showChangePassword = false
+    @Published var touchIDEnabled = false
+    let touchIDAvailable = BiometricStore.isAvailable
 
     enum AccountViewMode: String {
         case grid, list
@@ -42,13 +45,19 @@ final class AppModel: ObservableObject {
     private var idleTimer: Timer?
     private var toastWorkItem: DispatchWorkItem?
     private var systemLockObservers: [(NotificationCenter, NSObjectProtocol)] = []
+    private var biometric: BiometricStore?
+    /// When the master password was last typed (drives the 14-day Touch ID re-prompt).
+    private var passwordEnteredAt: Date?
+    private var touchIDTriedSinceLock = false
     let idleTimeout: TimeInterval = 10 * 60
 
     init() {
         do {
             store = try Store()
             vault = Vault(store: store)
+            biometric = BiometricStore(dbPath: store.path)
             needsSetup = !(try vault.isInitialized())
+            touchIDEnabled = touchIDAvailable && biometric?.load() != nil
             if let saved = UserDefaults.standard.string(forKey: "email-vault:view") {
                 accountViewMode = AccountViewMode(rawValue: saved) ?? .grid
             }
@@ -122,6 +131,7 @@ final class AppModel: ObservableObject {
             let k = try await Task.detached(priority: .userInitiated) {
                 try vault.initialize(password: password)
             }.value
+            passwordEnteredAt = Date()
             finishUnlock(key: k)
             needsSetup = false
         } catch {
@@ -138,6 +148,8 @@ final class AppModel: ObservableObject {
             let k = try await Task.detached(priority: .userInitiated) {
                 try vault.unlock(password: password)
             }.value
+            passwordEnteredAt = Date()
+            refreshTouchIDRecord(key: k)
             finishUnlock(key: k)
         } catch VaultError.invalidMasterPassword {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -158,6 +170,7 @@ final class AppModel: ObservableObject {
     func lock() {
         Clipboard.clearConcealed()
         showChangePassword = false
+        touchIDTriedSinceLock = false
         key = nil
         isUnlocked = false
         emails = []
@@ -304,6 +317,8 @@ final class AppModel: ObservableObject {
             }.value
             // Vault may have been locked (sleep etc.) while re-encrypting.
             if isUnlocked { key = k }
+            passwordEnteredAt = Date()
+            refreshTouchIDRecord(key: k)
             touch()
             showToast("主密码已修改")
             return nil
@@ -313,6 +328,88 @@ final class AppModel: ObservableObject {
         } catch {
             return "修改失败，数据未改动：\(error)"
         }
+    }
+
+    // MARK: - Touch ID
+
+    private func currentVaultID() -> String? {
+        (try? store.getMeta(VaultCrypto.metaVerifier)).flatMap { $0 }.map(BiometricStore.vaultID(verifierHex:))
+    }
+
+    /// After a master-password unlock or change: re-seal to the current key and reset the 14-day clock.
+    private func refreshTouchIDRecord(key: SymmetricKey) {
+        guard let biometric, let record = biometric.load(), let vaultID = currentVaultID() else { return }
+        do {
+            try biometric.save(BiometricStore.reseal(record, key: key, vaultID: vaultID, passwordAt: Date()))
+        } catch {
+            disableTouchID()
+        }
+    }
+
+    func enableTouchID() {
+        touch()
+        guard let biometric, let key, let vaultID = currentVaultID() else { return }
+        do {
+            let record = try BiometricStore.seal(key: key, vaultID: vaultID, passwordAt: passwordEnteredAt ?? Date())
+            try biometric.save(record)
+            touchIDEnabled = true
+            showToast("已开启 Touch ID 解锁")
+        } catch {
+            errorMessage = "开启 Touch ID 失败：\(error.localizedDescription)"
+            showToast("开启 Touch ID 失败")
+        }
+    }
+
+    func disableTouchID() {
+        biometric?.delete()
+        touchIDEnabled = false
+    }
+
+    /// Prompt once per lock, only while the app is frontmost.
+    func autoTouchID() {
+        guard touchIDEnabled, !isUnlocked, !isBusy, !touchIDTriedSinceLock, NSApp.isActive else { return }
+        touchIDTriedSinceLock = true
+        Task { await unlockWithTouchID() }
+    }
+
+    func unlockWithTouchID() async {
+        errorMessage = nil
+        guard let biometric, let record = biometric.load() else {
+            touchIDEnabled = false
+            return
+        }
+        guard record.vaultID == currentVaultID() else {
+            disableTouchID()
+            errorMessage = "主密码已变更，Touch ID 已关闭。请用主密码解锁后重新开启。"
+            return
+        }
+        guard !BiometricStore.passwordExpired(record) else {
+            errorMessage = "已超过 14 天未输入主密码，请输入一次主密码。"
+            return
+        }
+        let context = LAContext()
+        context.localizedFallbackTitle = "输入主密码"
+        do {
+            try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: "解锁 Email Vault")
+        } catch let error as LAError {
+            switch error.code {
+            case .userCancel, .userFallback, .systemCancel, .appCancel:
+                break
+            default:
+                errorMessage = "Touch ID 不可用：\(error.localizedDescription)"
+            }
+            return
+        } catch {
+            errorMessage = "Touch ID 不可用：\(error.localizedDescription)"
+            return
+        }
+        guard let k = try? BiometricStore.open(record, context: context), vault.verify(key: k) else {
+            disableTouchID()
+            errorMessage = "Touch ID 凭据已失效（可能指纹有变动），已关闭。请用主密码解锁后重新开启。"
+            return
+        }
+        passwordEnteredAt = record.passwordAt
+        finishUnlock(key: k)
     }
 
     /// Roll the due date forward one cycle, or drop a one-off reminder.

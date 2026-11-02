@@ -35,6 +35,16 @@ public final class Vault: @unchecked Sendable {
         return key
     }
 
+    /// True if `key` decrypts the stored verifier (e.g. a key recovered via Touch ID).
+    public func verify(key: SymmetricKey) -> Bool {
+        guard
+            let raw = try? store.getMeta(VaultCrypto.metaVerifier),
+            let blob = try? Hex.decode(raw),
+            let plaintext = try? VaultCrypto.decrypt(blob, with: key)
+        else { return false }
+        return plaintext == VaultCrypto.verifierPlaintext
+    }
+
     /// Verify `current`, then re-encrypt every secret under a key derived from `new` with a fresh salt.
     /// Backs up the DB first; the rewrite is a single transaction. Returns the new key.
     public func changePassword(current: String, new: String) throws -> SymmetricKey {
