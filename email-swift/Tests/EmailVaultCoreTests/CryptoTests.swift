@@ -3,7 +3,7 @@ import Crypto
 @testable import EmailVaultCore
 
 final class CryptoTests: XCTestCase {
-    /// Exact vectors from swift-rewrite-prompt.md
+    /// Exact vectors from docs/data-format.md
     private let master = "test-master-123"
     private let paramsJSON = #"{"salt": "00112233445566778899aabbccddeeff", "time_cost": 3, "memory_cost": 65536, "parallelism": 4}"#
     private let expectedKeyHex = "4cf81a5f663c93d65bbd014cd37f286547b700ee06382a23ffdd425d698f22b3"

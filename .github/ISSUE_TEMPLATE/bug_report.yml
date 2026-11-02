@@ -1,0 +1,45 @@
+name: Bug 报告
+description: 报告功能异常或崩溃（安全问题请走 SECURITY.md 私下报告）
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **不要粘贴任何真实的密码、安全备注或保险箱数据。** 安全漏洞请按 [SECURITY.md](../blob/main/SECURITY.md) 私下报告。
+  - type: input
+    id: version
+    attributes:
+      label: Email Vault 版本
+      description: 「Email Vault → 关于 Email Vault」中可见
+      placeholder: 1.0.0 (34)
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS 版本与芯片
+      placeholder: macOS 15.1，Apple M2
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+      description: 实际结果与期望结果
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: 截图或其他信息
+      description: 截图前请确认没有真实账号信息

@@ -119,12 +119,19 @@ swift test            # 需要完整 Xcode（XCTest）
 ```
 
 - 设计说明：[`email-swift/docs/design.md`](email-swift/docs/design.md)
-- 数据格式与加密测试向量：[`docs/swift-rewrite-prompt.md`](docs/swift-rewrite-prompt.md)
-- 验收清单：[`email-swift/docs/ACCEPTANCE.md`](email-swift/docs/ACCEPTANCE.md)
+- 数据格式与加密测试向量：[`docs/data-format.md`](docs/data-format.md)
 
-**发布新版本**：修改 `email-swift/VERSION` 并提交推送，然后运行 `./scripts/release.sh`（可先 `--dry-run` 预览发布说明）。
+参与开发请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，发布流程也在其中。
 
 开发调试一律使用临时数据库（`EMAIL_VAULT_DB`），不要直接操作真实数据。
+
+## 安全
+
+发现漏洞请按 [SECURITY.md](SECURITY.md) 私下报告，不要开公开 Issue。
+
+## 许可证
+
+[MIT](LICENSE)
 
 ## 致谢
 

@@ -55,7 +55,21 @@ commits_of() {
     | sed -nE "s/^$1(\([^)]*\))?!?: (.*)/- \2/p"
 }
 
-if [[ -z "$PREV_TAG" ]]; then
+# Prefer the curated CHANGELOG.md section for this version; fall back to commit subjects.
+CHANGELOG="$ROOT/../CHANGELOG.md"
+CHANGES=""
+if [[ -f "$CHANGELOG" ]]; then
+  CHANGES="$(awk -v v="$VERSION" '
+    $0 ~ "^## \\[" v "\\]" { on = 1; next }
+    on && /^## \[/ { exit }
+    on && /^\[[^]]+\]: / { exit }
+    on { print }
+  ' "$CHANGELOG" | awk 'NF || seen { seen = 1; print }')"
+fi
+
+if [[ -n "$CHANGES" ]]; then
+  :
+elif [[ -z "$PREV_TAG" ]]; then
   CHANGES="首个发布版本：邮箱与平台账号管理、加密安全备注、续费提醒、Touch ID 解锁、修改主密码、自动锁定。完整功能见 [README](https://github.com/mortalxu98/email-vault#readme)。"
 else
   FEATS="$(commits_of feat)"

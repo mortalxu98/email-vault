@@ -1,0 +1,32 @@
+# 更新日志
+
+格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+发布时 `scripts/release.sh` 会把对应版本的段落用作 GitHub Release 说明。
+
+## [Unreleased]
+
+### 新增
+
+- 全新应用图标：封蜡信封。
+- MIT 许可证、安全策略、贡献指南、Issue / PR 模板。
+
+## [1.0.0] - 2026-11-02
+
+首个发布版本。
+
+### 新增
+
+- 邮箱与平台账号管理：按服务商分组，内置 70+ 平台目录，自动补全与品牌图标，卡片 / 列表视图，全局搜索。
+- 加密：Argon2id 派生主密钥，AES-256-GCM 加密密码与安全备注。
+- 安全备注：为邮箱和服务保存助记词、恢复码、2FA 密钥等，加密存储。
+- 续费提醒：到期日、周期、金额、提前提醒天数；即将到期横幅，一键顺延。
+- 总览首页：统计、续费列表、最近修改。
+- 修改主密码：单事务重新加密全部数据，失败整体回滚。
+- Touch ID 解锁：Secure Enclave 封装，每 14 天需输入一次主密码。
+- 自动锁定：闲置 10 分钟、睡眠、锁屏、屏保、切换用户。
+- 剪贴板保护：复制的密码标记为 concealed，30 秒或锁定时清除。
+- 数据库只加列迁移，迁移与修改主密码前自动备份；一键导出备份。
+- 拖拽安装 DMG 与 GitHub Release 发布流程。
+
+[Unreleased]: https://github.com/mortalxu98/email-vault/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/mortalxu98/email-vault/releases/tag/v1.0.0

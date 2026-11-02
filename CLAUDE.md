@@ -6,7 +6,7 @@ Local-only password vault: email ↔ platform accounts. Native macOS SwiftUI app
 - `email-swift/Sources/EmailVaultApp/` – SwiftUI views and app model
 - `email-swift/Sources/CArgon2/` – vendored reference Argon2
 - `email-swift/scripts/build.sh` – builds `email-swift/dist/Email Vault.app`; uses `assets/EmailVault.icns`
-- `docs/swift-rewrite-prompt.md` – DB schema and crypto test vectors; the on-disk format must stay compatible
+- `docs/data-format.md` – DB schema, crypto, test vectors, Touch ID file; the on-disk format must stay compatible (additive columns only)
 
 Rules:
 - Never log or persist plaintext passwords.

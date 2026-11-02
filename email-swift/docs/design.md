@@ -2,15 +2,13 @@
 
 ## 目标
 
-用 SwiftUI 把 Python 版 Email Vault 重写为 macOS 14+ 原生应用，与现有 `vault.db` **逐字节兼容**（Argon2id + AES-256-GCM，表结构不变）。
+macOS 14+ 原生 SwiftUI 应用。项目最初由 Python 网页版重写而来，磁盘格式保持兼容并只做加列扩展，规范见 [`docs/data-format.md`](../../docs/data-format.md)。
 
 ## 已确认的决策
 
 1. **不启用 App Sandbox** — 默认数据库路径 `~/.local/share/email-vault/vault.db`（可用 `EMAIL_VAULT_DB` 覆盖）。
 2. **Argon2id** 使用内置的官方 C 参考实现（`Sources/CArgon2`，PHC 冠军算法），封装成 SPM 的 C target。
 3. **SQLite** 通过 GRDB.swift 访问；每个连接都执行 `PRAGMA foreign_keys = ON`。
-4. 新代码只放在 `email-swift/` 下；Python 代码仅作只读参考（现已删除）。
-5. 汇报用中文；代码、注释、commit 用英文。
 
 ## 目录结构
 
@@ -24,7 +22,7 @@ email-swift/
   Tests/EmailVaultCoreTests/
   scripts/build.sh
   docs/
-  BrandIcons/          # 从 Python 版 _brand_icons.html 拷来的 SVG 图标
+  BrandIcons/          # 品牌 SVG 图标源（_brand_icons.html）
 ```
 
 ## 加密
@@ -86,8 +84,8 @@ Touch ID 解锁（可选，工具栏「…」里开关）：用 CryptoKit 在 Se
 - SwiftUI 应用代码都包在 `#if os(macOS)` 里；Linux 上 `@main` 是命令行占位程序，打印提示后退出。
 - 品牌 SVG 图标放在 `BrandIcons/_brand_icons.html`（来自 Python 版）。PDF 由 `scripts/extract_brand_icons.py` 生成到 `Sources/EmailVaultApp/Resources/BrandIcons/`，通过 `BrandIcon.image(named:)` 从 `Bundle.module` 加载。
 
-## 在 Mac 上的后续步骤
+## 维护
 
-1. `cd email-swift && swift test && ./scripts/build.sh`
-2. 按 `docs/ACCEPTANCE.md` 操作，使用 `vault.db` 的**副本**。
-3. 品牌 PDF 已打包；修改 `_brand_icons.html` 后重新运行 `python3 scripts/extract_brand_icons.py`。
+- 品牌 PDF 已打包；修改 `BrandIcons/_brand_icons.html` 后运行 `python3 scripts/extract_brand_icons.py`。
+- 应用图标源为 `assets/icon.svg`，修改后运行 `scripts/make-icon.sh` 重新生成 icns。
+- 打包与发布见 [CONTRIBUTING.md](../../CONTRIBUTING.md)。
