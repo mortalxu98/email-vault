@@ -1,140 +1,144 @@
-# Email Vault
-
-一个纯本地、离线运行的 macOS 密码库，按「邮箱 → 注册过的平台」组织账号，跟踪订阅续费。
-
 <p align="center">
-  <img src="docs/screenshots/overview.png" width="49%" alt="总览">
-  <img src="docs/screenshots/detail.png" width="49%" alt="邮箱详情">
+  <img src="assets/icon.svg" width="128" alt="Email Vault icon">
 </p>
 
-<sub>截图使用演示数据。</sub>
+<h1 align="center">Email Vault</h1>
 
-## 特性
+<p align="center">
+  A local-only, offline password vault for macOS that organizes accounts by the email you signed up with — and keeps track of subscription renewals.
+</p>
 
-**账号管理**
-- 邮箱按服务商（Gmail、Outlook、Proton、iCloud、QQ……）分组；每个邮箱下记录它注册过的平台。
-- 内置 70+ 个常用平台目录（AI、社交、加密货币等），输入时自动补全名称、分类和网址，并匹配品牌图标。
-- 卡片 / 列表两种视图，按分类筛选；全局搜索邮箱、平台、用户名和备注。
+<p align="center">
+  <b>English</b> · <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-**安全**
-- Argon2id 派生主密钥，AES-256-GCM 加密密码和安全备注；密钥只在内存中。
-- 可选 Touch ID 解锁（Secure Enclave，每 14 天仍需输入一次主密码）。
-- 闲置 10 分钟、睡眠、锁屏、屏保、切换用户时自动锁定。
-- 复制的密码标记为 concealed，30 秒后或锁定时自动清空剪贴板。
-- 支持修改主密码：单事务重新加密全部数据，失败整体回滚。
+<p align="center">
+  <a href="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml"><img src="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/Swift-5.9%2B-orange" alt="Swift 5.9+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT"></a>
+</p>
 
-**续费提醒**
-- 为服务设置到期日、周期（一次性 / 每月 / 每年）、金额和提前提醒天数。
-- 即将到期或已过期的项目在顶部横幅提示；「已续费」自动顺延一个周期。
+<p align="center">
+  <img src="docs/screenshots/overview-en.png" width="49%" alt="Overview">
+  <img src="docs/screenshots/detail-en.png" width="49%" alt="Email detail">
+</p>
 
-**数据**
-- 单个 SQLite 文件，结构变更只做加列，迁移前自动备份。
-- 一键导出一致性快照，备份中的敏感字段始终是密文。
+<p align="center"><sub>Screenshots use demo data.</sub></p>
 
-## 安装
+## Features
 
-从 [Releases](https://github.com/mortalxu98/email-vault/releases/latest) 下载最新的 `EmailVault-<版本>.dmg`，双击后把 Email Vault 拖到「应用程序」。
+**Accounts**
+- Emails are grouped by provider (Gmail, Outlook, Proton, iCloud, QQ…); each email lists the platforms registered with it.
+- 70+ built-in platforms (AI, social, crypto…) with autocomplete for name, category and URL, plus brand icons.
+- Card and list views, category filters and global search; right-click to copy a username or password or open the URL.
 
-本应用未经 Apple 公证。首次打开时系统会提示无法验证开发者：点「完成」，再到 **系统设置 → 隐私与安全性** 底部点「仍要打开」，只需一次。
+**Security**
+- Argon2id key derivation and AES-256-GCM encryption for passwords and secure notes; the key lives only in memory.
+- Secure notes for seed phrases, recovery codes and 2FA secrets, encrypted like passwords.
+- Optional Touch ID unlock backed by the Secure Enclave; the master password is still required every 14 days.
+- Auto-lock after 10 minutes idle and on sleep, screen lock, screensaver or user switch.
+- Copied secrets are marked concealed and cleared after 30 seconds or on lock.
+- Change the master password with a single-transaction re-encryption that rolls back on any failure.
 
-### 从源码构建
+**Renewals**
+- Track due date, cycle (one-time, monthly, yearly), amount and how many days ahead to be reminded.
+- Upcoming and overdue renewals show in a banner; "Renewed" moves the date forward one cycle.
 
-要求：macOS 14+，Swift 5.9+ 工具链（Command Line Tools 即可，无需完整 Xcode）。
+**Data**
+- One SQLite file; schema changes are additive and the database is backed up before every migration.
+- One-click encrypted backup, plus a plain-text CSV export (master password required) for migrating elsewhere.
+- English and Simplified Chinese UI, following the system language.
+
+## Install
+
+Download the latest `EmailVault-<version>.dmg` from [Releases](https://github.com/mortalxu98/email-vault/releases/latest), open it and drag Email Vault into Applications. Requires macOS 14+ on Apple silicon.
+
+The app is not notarized by Apple. On first launch macOS says it can't verify the developer: click **Done**, then go to **System Settings → Privacy & Security** and click **Open Anyway** at the bottom. You only need to do this once.
+
+On first launch you set a master password (8+ characters). **It cannot be recovered** — if you forget it, the data cannot be decrypted.
+
+To upgrade, drag the new version into Applications and choose Replace. Your data lives in `~/.local/share/email-vault/` and is left untouched. **Email Vault → Check for Updates…** opens the latest release page.
+
+### Build from source
+
+Requires macOS 14+ and a Swift 5.9+ toolchain (Command Line Tools are enough).
 
 ```bash
 git clone https://github.com/mortalxu98/email-vault.git
 cd email-vault/email-swift
-./scripts/package-dmg.sh           # 构建并打包 dist/EmailVault-<版本>.dmg
+./scripts/package-dmg.sh      # writes dist/EmailVault-<version>.dmg
 ```
 
-双击 DMG，把 Email Vault 拖到「应用程序」即可。升级时同样操作，选择替换；数据保存在 `~/.local/share/email-vault/`，不受影响。
+Run `./scripts/build.sh` if you only need the `.app`.
 
-版本号在 `email-swift/VERSION`，构建号取 git 提交数。只需要 `.app` 时用 `./scripts/build.sh`。
+## Usage
 
-构建产物为 ad-hoc 签名、未公证；本机构建的 App 可直接打开。
-
-首次启动设置主密码（至少 8 个字符）。**主密码无法找回**，遗忘即无法解密数据。
-
-## 使用
-
-| 操作 | 方式 |
+| Action | How |
 |---|---|
-| 新增邮箱 | ⇧⌘N |
-| 新增服务 | ⌘N（需先选中邮箱） |
-| 搜索 | ⌘F |
-| 立即锁定 | ⌘L，或工具栏锁形按钮 |
-| 回到总览 | 工具栏房子按钮 |
-| 导出备份 / 修改主密码 / Touch ID | 工具栏「…」菜单 |
+| New email / new service | ⇧⌘N / ⌘N (select an email first) |
+| Search | ⌘F |
+| Lock now | ⌘L, or the lock button in the toolbar |
+| Back to overview | House button in the toolbar |
+| Copy, open URL, edit, delete | Right-click a service card |
+| Backup, CSV export, change password, Touch ID | Toolbar **…** menu |
 
-## 安全模型
+## Security model
 
-| 数据 | 存储方式 |
+| Data | Stored as |
 |---|---|
-| 邮箱密码、服务密码 | AES-256-GCM 密文 |
-| 安全备注（助记词、恢复码、2FA 密钥等） | AES-256-GCM 密文 |
-| 邮箱地址、平台名、用户名、网址、普通备注、续费信息 | 明文（用于搜索和提醒） |
+| Email and service passwords | AES-256-GCM ciphertext |
+| Secure notes | AES-256-GCM ciphertext |
+| Email addresses, platform names, usernames, URLs, notes, renewal info | Plain text (for search and reminders) |
 
-- **密钥派生**：Argon2id v1.3，`t=3, m=64 MiB, p=4`，16 字节随机 salt；参数存于数据库，可平滑调整。
-- **主密码校验**：用派生密钥解密固定校验串，不存储任何密码哈希。
-- **Touch ID**：保险箱密钥经 ECDH + HKDF + AES-GCM 封装到绑定当前指纹的 Secure Enclave 密钥，封装文件只能在本机解开；增删指纹后自动失效。
-- **不防护的场景**：已解锁状态下的本机恶意软件、能通过你指纹验证的人、主密码泄露。明文字段不要写敏感信息。
+- **Key derivation**: Argon2id v1.3, `t=3, m=64 MiB, p=4`, random 16-byte salt; parameters are stored in the database.
+- **Password check**: the derived key must decrypt a fixed verifier; no password hash is stored.
+- **Touch ID**: the vault key is sealed with ECDH + HKDF + AES-GCM to a Secure Enclave key bound to the current fingerprints. The sealed file only opens on this Mac and is invalidated when fingerprints change.
+- **Out of scope**: malware running while the vault is unlocked, anyone who passes your fingerprint check, a leaked master password. Don't put secrets in plain-text fields.
 
-应用不联网，不记录日志，不把明文写入磁盘、UserDefaults 或任何缓存。
+The app never touches the network, writes no logs and never stores plaintext on disk or in caches (except a CSV you explicitly export). The full on-disk format is specified in [docs/data-format.md](docs/data-format.md).
 
-## 数据与备份
+## Data and backups
 
-| 路径 | 内容 |
+| Path | Contents |
 |---|---|
-| `~/.local/share/email-vault/vault.db` | 数据库（权限 0600） |
-| `~/.local/share/email-vault/backups/` | 迁移、修改主密码前的自动备份 |
-| `~/.local/share/email-vault/vault.touchid.json` | Touch ID 封装（仅开启时存在） |
+| `~/.local/share/email-vault/vault.db` | Database (0600) |
+| `~/.local/share/email-vault/backups/` | Automatic backups before migrations and password changes |
+| `~/.local/share/email-vault/vault.touchid.json` | Touch ID seal (only when enabled) |
 
-设置环境变量 `EMAIL_VAULT_DB` 可指定其他数据库路径，例如用副本做测试：
+- **Back up**: toolbar **…** → Export Backup, or `sqlite3 ~/.local/share/email-vault/vault.db ".backup <dest>"`.
+- **Restore**: quit the app, replace `vault.db` with the backup and reopen; unlock with the master password from when the backup was made.
+- **Use another database**: `open -n --env EMAIL_VAULT_DB=/path/to/vault.db "/Applications/Email Vault.app"`.
 
-```bash
-open -n --env EMAIL_VAULT_DB=/tmp/vault-copy.db "/Applications/Email Vault.app"
-```
-
-**备份**：工具栏「…」→ 导出备份，或 `sqlite3 ~/.local/share/email-vault/vault.db ".backup <目标路径>"`。
-
-**恢复**：退出应用，用备份文件替换 `vault.db` 后重新打开，使用备份时的主密码解锁。若主密码与当前不同，Touch ID 会自动关闭，重新开启即可。
-
-## 开发
+## Development
 
 ```
 email-swift/
-├── Sources/EmailVaultCore/   加密、认证、SQLite 存储、平台目录（平台无关，可在 Linux 测试）
-├── Sources/EmailVaultApp/    SwiftUI 界面与应用状态
-├── Sources/CArgon2/          Argon2 官方 C 参考实现（vendored）
-├── Tests/                    Core 单元测试
-├── scripts/build.sh          构建 .app，支持 --dry-run / --debug
-├── scripts/package-dmg.sh    打包拖拽安装 DMG，支持 --skip-build / --dry-run
-└── scripts/release.sh        发布 GitHub Release（读取 VERSION，打 tag，上传 DMG）
+├── Sources/EmailVaultCore/   Crypto, auth, SQLite store and migrations, platform catalog, CSV export
+├── Sources/EmailVaultApp/    SwiftUI views and app state
+├── Sources/CArgon2/          Argon2 reference implementation
+├── Tests/                    Core unit tests
+├── Localization/             UI translations (en / zh-Hans)
+└── scripts/                  Build, DMG packaging, release, icon, translation check
 ```
 
 ```bash
 cd email-swift
 swift build
-swift test            # 需要完整 Xcode（XCTest）
+swift test        # needs full Xcode
 ```
 
-- 设计说明：[`email-swift/docs/design.md`](email-swift/docs/design.md)
-- 数据格式与加密测试向量：[`docs/data-format.md`](docs/data-format.md)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, conventions and release steps, [email-swift/docs/design.md](email-swift/docs/design.md) for architecture notes and [CHANGELOG.md](CHANGELOG.md) for release history.
 
-参与开发请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，发布流程也在其中。
+## Security
 
-开发调试一律使用临时数据库（`EMAIL_VAULT_DB`），不要直接操作真实数据。
+Please report vulnerabilities privately as described in [SECURITY.md](SECURITY.md) — not in public issues.
 
-## 安全
-
-发现漏洞请按 [SECURITY.md](SECURITY.md) 私下报告，不要开公开 Issue。
-
-## 许可证
+## License
 
 [MIT](LICENSE)
 
-## 致谢
+## Acknowledgements
 
-- [Argon2](https://github.com/P-H-C/phc-winner-argon2) 参考实现
-- [GRDB.swift](https://github.com/groue/GRDB.swift)、[swift-crypto](https://github.com/apple/swift-crypto)
-- 品牌图标来自 CC0 图标集 [gilbarbara/logos](https://github.com/gilbarbara/logos) 与 [Simple Icons](https://simpleicons.org)，商标归各自所有者，详见 [`Resources/README.md`](email-swift/Sources/EmailVaultApp/Resources/README.md)。
+- The [Argon2](https://github.com/P-H-C/phc-winner-argon2) reference implementation, [GRDB.swift](https://github.com/groue/GRDB.swift) and [swift-crypto](https://github.com/apple/swift-crypto)
+- Brand icons come from the CC0 sets [gilbarbara/logos](https://github.com/gilbarbara/logos) and [Simple Icons](https://simpleicons.org); trademarks belong to their owners.
