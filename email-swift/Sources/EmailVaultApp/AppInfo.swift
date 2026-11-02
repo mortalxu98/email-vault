@@ -5,8 +5,7 @@ import Foundation
 /// App metadata, the About panel and the update check entry point.
 enum AppInfo {
     static let repositoryURL = URL(string: "https://github.com/mortalxu98/email-vault")!
-    /// The repository is private, so the app cannot query releases anonymously; open the page
-    /// in the browser, where the user's GitHub session applies.
+    /// The app never touches the network, so checking for updates opens this page in the browser.
     static let latestReleaseURL = URL(string: "https://github.com/mortalxu98/email-vault/releases/latest")!
 
     static var version: String {
