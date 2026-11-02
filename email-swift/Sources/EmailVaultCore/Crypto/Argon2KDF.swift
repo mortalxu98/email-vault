@@ -3,7 +3,7 @@ import CArgon2
 
 /// Thin wrapper around the official Argon2 C reference (`argon2id_hash_raw`, version 0x13).
 public enum Argon2KDF {
-    /// Derive a 32-byte key matching Python `argon2.low_level.hash_secret_raw(..., type=Type.ID)`.
+    /// Derive the raw 32-byte Argon2id key (see docs/data-format.md).
     public static func deriveKey(password: String, params: KdfParams) throws -> Data {
         let passwordData = Data(password.utf8)
         let salt = try Hex.decode(params.salt)

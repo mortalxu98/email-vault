@@ -149,3 +149,4 @@
 "今天到期" = "Due today";
 "明天到期" = "Due tomorrow";
 "%ld 天后到期" = "Due in %ld days";
+"无法打开数据库" = "Couldn't open the database";

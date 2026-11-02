@@ -1,6 +1,6 @@
 import Foundation
 
-/// IEEE CRC-32, matching Python `zlib.crc32`.
+/// Standard IEEE CRC-32 (same as zlib); picks stable avatar colors.
 enum CRC32 {
     private static let table: [UInt32] = {
         (0..<256).map { i -> UInt32 in

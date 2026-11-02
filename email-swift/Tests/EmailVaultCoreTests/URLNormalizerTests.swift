@@ -2,7 +2,7 @@ import XCTest
 @testable import EmailVaultCore
 
 final class URLNormalizerTests: XCTestCase {
-    func testMatchesPythonNormalizeURL() {
+    func testNormalizeURL() {
         let cases: [(String, String)] = [
             ("", ""),
             ("   ", ""),

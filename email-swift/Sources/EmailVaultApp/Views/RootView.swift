@@ -7,7 +7,15 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if model.needsSetup {
+            if let launchError = model.launchError {
+                EmptyStateView(
+                    systemImage: "exclamationmark.triangle.fill",
+                    title: tr("无法打开数据库"),
+                    subtitle: launchError,
+                    big: true
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if model.needsSetup {
                 SetupView()
             } else if !model.isUnlocked {
                 UnlockView()

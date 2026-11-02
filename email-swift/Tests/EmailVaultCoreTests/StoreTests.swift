@@ -84,22 +84,14 @@ final class StoreTests: XCTestCase {
     }
 
     func testLikeEscape() throws {
-        _ = try store.createEmail(address: "a@gmail.com", note: "100%_done", passwordEnc: nil)
-        // Searching for literal % should not match everything
-        _ = try store.listEmails(query: "%")
-        // Python test expects no match for q=%25 which is "%"
-        // Our email note contains "%", so searching for "%" SHOULD find it via escaped pattern.
-        // The Python test searches q=%25 (URL-decoded "%") against address/note/platform —
-        // address "a@gmail.com" has no %, note is empty in that test. Here note has %.
-        // Match Python test: email with empty note, query "%" finds nothing.
-        try store.deleteEmail(try store.listEmails()[0].id)
+        // `%` and `_` are literals in search, not wildcards.
         _ = try store.createEmail(address: "a@gmail.com", note: "", passwordEnc: nil)
         XCTAssertTrue(try store.listEmails(query: "%").isEmpty)
         XCTAssertTrue(try store.listEmails(query: "_").isEmpty)
-        // Unescaped would treat % as wildcard; escaped finds literal only
+
         _ = try store.createEmail(address: "b@gmail.com", note: "100%_done", passwordEnc: nil)
-        let found = try store.listEmails(query: "100%")
-        XCTAssertEqual(found.map(\.address), ["b@gmail.com"])
+        XCTAssertEqual(try store.listEmails(query: "100%").map(\.address), ["b@gmail.com"])
+        XCTAssertEqual(try store.listEmails(query: "%_").map(\.address), ["b@gmail.com"])
     }
 
     func testLikePatternEscapes() {

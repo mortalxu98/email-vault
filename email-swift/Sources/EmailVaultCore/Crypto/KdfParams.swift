@@ -1,7 +1,7 @@
 import Foundation
 
 /// Argon2id parameters stored in `meta.kdf_params` as JSON.
-/// Keys match the Python original: salt, time_cost, memory_cost, parallelism.
+/// JSON keys are fixed by the on-disk format: salt, time_cost, memory_cost, parallelism.
 public struct KdfParams: Codable, Equatable, Sendable {
     public var salt: String
     public var timeCost: Int

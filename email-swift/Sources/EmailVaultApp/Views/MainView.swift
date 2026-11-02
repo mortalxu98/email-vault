@@ -46,7 +46,7 @@ struct MainView: View {
                             Divider()
                             Toggle(tr("使用 Touch ID 解锁"), isOn: Binding(
                                 get: { model.touchIDEnabled },
-                                set: { $0 ? model.enableTouchID() : model.disableTouchID() }
+                                set: { model.setTouchIDEnabled($0) }
                             ))
                         }
                     } label: {

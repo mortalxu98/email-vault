@@ -119,7 +119,7 @@ final class PlatformTests: XCTestCase {
     }
 
     func testColorIndexStable() {
-        // Must match Python zlib.crc32(text.lower().encode()) % 8
+        // Avatar color = crc32(lowercased UTF-8) % 8; must stay stable across releases
         XCTAssertEqual(PlatformCatalog.colorIndex("example.org"), PlatformCatalog.colorIndex("Example.ORG"))
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Matches Python `app._normalize_url`: default to https:// and drop non-web schemes.
+/// Normalizes a user-entered URL: defaults to https:// and drops non-web schemes.
 public enum URLNormalizer {
     public static func normalize(_ raw: String) -> String {
         var value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -14,7 +14,7 @@ public enum URLNormalizer {
         return scheme == "http" || scheme == "https" ? value : ""
     }
 
-    /// Scheme as parsed by Python `urllib.parse.urlsplit` (lowercased), or "" if none.
+    /// Lowercased URL scheme per RFC 3986 (`scheme ":"`), or "" if none.
     static func scheme(of value: String) -> String {
         guard let colon = value.firstIndex(of: ":") else {
             return ""

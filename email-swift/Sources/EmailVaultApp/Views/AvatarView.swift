@@ -7,7 +7,9 @@ struct AvatarView: View {
     let text: String
     var logo: String?
     var size: CGFloat = 32
-    var wide: Bool = false
+
+    /// Horizontal marks need more of the tile to stay legible.
+    private var wide: Bool { logo.map(PlatformCatalog.wideLogos.contains) ?? false }
 
     /// Deep enough for white initials to stay legible (≈4.5:1) in both appearances.
     private static let palette: [Color] = [

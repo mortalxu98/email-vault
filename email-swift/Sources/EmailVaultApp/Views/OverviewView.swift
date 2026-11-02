@@ -93,17 +93,11 @@ private struct OverviewRow<Trailing: View>: View {
     @State private var hovering = false
 
     var body: some View {
-        let logo = PlatformCatalog.platformLogo(platform: account.platform, url: account.url)
         Button {
             model.selectEmail(account.emailId)
         } label: {
             HStack(spacing: 12) {
-                AvatarView(
-                    text: account.platform,
-                    logo: logo,
-                    size: 28,
-                    wide: PlatformCatalog.wideLogos.contains(logo ?? "")
-                )
+                AvatarView(text: account.platform, logo: account.logoKey, size: 28)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(account.platform).fontWeight(.medium)
                     Text(account.emailAddress).font(.caption).foregroundStyle(.secondary)

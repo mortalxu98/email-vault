@@ -75,14 +75,8 @@ struct RenewalBanner: View {
     }
 
     private func row(_ account: AccountRecord, _ renewal: Renewal) -> some View {
-        let logo = PlatformCatalog.platformLogo(platform: account.platform, url: account.url)
         return HStack(spacing: 10) {
-            AvatarView(
-                text: account.platform,
-                logo: logo,
-                size: 24,
-                wide: PlatformCatalog.wideLogos.contains(logo ?? "")
-            )
+            AvatarView(text: account.platform, logo: account.logoKey, size: 24)
             VStack(alignment: .leading, spacing: 1) {
                 Text(account.platform).fontWeight(.medium)
                 Text(account.emailAddress).font(.caption).foregroundStyle(.secondary)
@@ -91,8 +85,7 @@ struct RenewalBanner: View {
             RenewalBadge(renewal: renewal)
             Spacer()
             Button(tr("查看")) {
-                model.searchQuery = ""
-                model.selectEmail(account.emailId)
+                model.openEmail(account.emailId)
             }
             Button(renewal.cycle == .once ? tr("已处理") : tr("已续费")) {
                 model.markRenewed(account)

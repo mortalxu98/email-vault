@@ -30,11 +30,7 @@ struct EmailDetailView: View {
             isPresented: $showDelete,
             titleVisibility: .visible
         ) {
-            Button(L10n.delete, role: .destructive) {
-                try? model.store.deleteEmail(email.id)
-                model.selectEmail(nil)
-                model.refresh()
-            }
+            Button(L10n.delete, role: .destructive) { model.deleteEmail(email) }
         }
         .onChange(of: model.requestNewAccount) { _, v in
             if v {
@@ -71,18 +67,15 @@ struct EmailDetailView: View {
                     Text(L10n.emailPassword)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    SecretRow(
-                        hasPassword: email.hasPassword,
-                        revealed: $revealedPassword,
-                        load: { try model.decryptEmailPassword(email.id) },
-                        onCopy: { model.copy($0, conceal: true) }
-                    )
+                    SecretRow(hasPassword: email.hasPassword, revealed: $revealedPassword) {
+                        try model.emailPassword(email)
+                    }
                 }
                 if !email.note.isEmpty {
                     Text(email.note).foregroundStyle(.secondary)
                 }
                 if email.hasSecret {
-                    SecureNoteRow(load: { try model.decryptEmailSecret(email.id) })
+                    SecureNoteRow { try model.emailSecret(email) }
                         .id(email.id)
                 }
                 Text(L10n.notePlaintext)

@@ -263,7 +263,7 @@ public enum PlatformCatalog {
         return entries
     }
 
-    // MARK: - Autocomplete scoring (matches app.js)
+    // MARK: - Autocomplete scoring
 
     public static let suggestLimit = 8
 

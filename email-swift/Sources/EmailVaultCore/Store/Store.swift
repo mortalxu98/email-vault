@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-/// SQLite persistence matching the Python `Store` schema and behavior exactly.
+/// SQLite persistence for the vault. Schema and migration rules: docs/data-format.md.
 public final class Store: @unchecked Sendable {
     public let path: URL
     private let dbQueue: DatabaseQueue
@@ -92,7 +92,7 @@ public final class Store: @unchecked Sendable {
         }
     }
 
-    // MARK: - LIKE escape (matches Python `_like`)
+    // MARK: - LIKE escape
 
     public static func likePattern(_ query: String) -> String {
         let escaped = query
