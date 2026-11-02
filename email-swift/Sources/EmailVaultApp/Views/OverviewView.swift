@@ -9,7 +9,7 @@ struct OverviewView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Text(tr("总览")).font(.largeTitle.bold())
+                Text(tr("总览（CI 测试：故意未翻译）")).font(.largeTitle.bold())
                 statsRow
                 renewalsSection
                 recentSection
