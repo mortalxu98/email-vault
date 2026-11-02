@@ -39,7 +39,7 @@ struct AccountCard: View {
                 }
                 Spacer()
                 actionButtons
-                    .opacity(hovering ? 1 : 0.35)
+                    .opacity(hovering ? 1 : 0)
             }
             if showEmail {
                 Button(account.emailAddress) {
@@ -86,6 +86,9 @@ struct AccountCard: View {
         )
         .cornerRadius(10)
         .onHover { hovering = $0 }
+        .contextMenu {
+            AccountContextMenu(account: account, onEdit: { showEdit = true }, onDelete: { showDelete = true })
+        }
         .sheet(isPresented: $showEdit) {
             AccountEditorSheet(emailId: account.emailId, account: account)
         }
@@ -219,13 +222,17 @@ struct AccountListRow: View {
                 Button { showDelete = true } label: { Image(systemName: "trash") }
                     .buttonStyle(.borderless)
             }
-            .opacity(hovering ? 1 : 0.3)
+            .opacity(hovering ? 1 : 0)
             .frame(width: 56)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(hovering ? Color.primary.opacity(0.04) : Color.clear)
+        .contentShape(Rectangle())
         .onHover { hovering = $0 }
+        .contextMenu {
+            AccountContextMenu(account: account, onEdit: { showEdit = true }, onDelete: { showDelete = true })
+        }
         .sheet(isPresented: $showEdit) {
             AccountEditorSheet(emailId: account.emailId, account: account)
         }
@@ -235,6 +242,40 @@ struct AccountListRow: View {
                 model.refresh()
             }
         }
+    }
+}
+
+/// Right-click menu shared by account cards and list rows.
+struct AccountContextMenu: View {
+    @EnvironmentObject var model: AppModel
+    let account: AccountRecord
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        if !account.username.isEmpty {
+            Button("复制用户名") { model.copy(account.username, conceal: false) }
+        }
+        if account.hasPassword {
+            Button("复制密码") {
+                if let pw = try? model.decryptAccountPassword(account.id) {
+                    model.copy(pw, conceal: true)
+                }
+            }
+        }
+        if account.hasSecret {
+            Button("复制安全备注") {
+                if let note = try? model.decryptAccountSecret(account.id) {
+                    model.copy(note, conceal: true)
+                }
+            }
+        }
+        if let url = sanitizedURL(account.url) {
+            Button("打开网址") { NSWorkspace.shared.open(url) }
+        }
+        Divider()
+        Button(L10n.edit, action: onEdit)
+        Button(L10n.delete, role: .destructive, action: onDelete)
     }
 }
 

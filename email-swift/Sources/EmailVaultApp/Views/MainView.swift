@@ -12,12 +12,12 @@ struct MainView: View {
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
         } detail: {
             VStack(spacing: 0) {
-                if let email = model.selectedEmail {
-                    if !model.dueRenewals.isEmpty { RenewalBanner() }
-                    EmailDetailView(email: email)
-                } else if !model.trimmedQuery.isEmpty {
+                if !model.trimmedQuery.isEmpty {
                     if !model.dueRenewals.isEmpty { RenewalBanner() }
                     SearchResultsView()
+                } else if let email = model.selectedEmail {
+                    if !model.dueRenewals.isEmpty { RenewalBanner() }
+                    EmailDetailView(email: email)
                 } else if model.emails.isEmpty {
                     EmptyStateView(
                         systemImage: "envelope.fill",

@@ -9,13 +9,21 @@ struct AvatarView: View {
     var size: CGFloat = 32
     var wide: Bool = false
 
+    /// Deep enough for white initials to stay legible (≈4.5:1) in both appearances.
     private static let palette: [Color] = [
-        .red, .orange, .yellow, .green, .mint, .cyan, .blue, .purple,
+        Color(red: 0.85, green: 0.28, blue: 0.30),  // red
+        Color(red: 0.83, green: 0.41, blue: 0.09),  // orange
+        Color(red: 0.66, green: 0.50, blue: 0.05),  // amber
+        Color(red: 0.18, green: 0.58, blue: 0.27),  // green
+        Color(red: 0.05, green: 0.52, blue: 0.60),  // teal
+        Color(red: 0.11, green: 0.47, blue: 0.82),  // blue
+        Color(red: 0.40, green: 0.26, blue: 0.83),  // violet
+        Color(red: 0.76, green: 0.15, blue: 0.36),  // pink
     ]
 
     /// Marks rendered as template (black path) so they adapt in dark mode.
     private static let templateLogos: Set<String> = [
-        "apple", "x", "github", "threads", "medium", "notion", "ollama",
+        "apple", "x", "github", "threads", "medium", "ollama",
         "elevenlabs", "cursor", "poe", "suno", "replicate", "okx", "githubcopilot",
     ]
 

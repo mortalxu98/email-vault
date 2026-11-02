@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import SwiftUI
 
 struct SetupView: View {
@@ -8,6 +9,10 @@ struct SetupView: View {
 
     var body: some View {
         VStack(spacing: 20) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 112, height: 112)
+                .accessibilityHidden(true)
             Text("Email Vault")
                 .font(.largeTitle.bold())
             Text("设置主密码")

@@ -8,6 +8,10 @@ struct UnlockView: View {
 
     var body: some View {
         VStack(spacing: 20) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 112, height: 112)
+                .accessibilityHidden(true)
             Text("Email Vault")
                 .font(.largeTitle.bold())
             Text(L10n.unlock)

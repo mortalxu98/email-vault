@@ -91,20 +91,22 @@ struct EmailDetailView: View {
             }
             Spacer()
             Button(L10n.edit) { showEdit = true }
-            Button(L10n.delete, role: .destructive) { showDelete = true }
+            Menu {
+                Button(role: .destructive) {
+                    showDelete = true
+                } label: {
+                    Label("删除邮箱…", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("更多")
         }
         .padding(20)
-        .background(
-            LinearGradient(
-                colors: [
-                    Color.accentColor.opacity(0.18),
-                    Color.purple.opacity(0.10),
-                    Color.primary.opacity(0.03),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
+        .background(.quaternary.opacity(0.35))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
