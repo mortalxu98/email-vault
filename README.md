@@ -33,6 +33,12 @@
 
 ## 安装
 
+从 [Releases](https://github.com/mortalxu98/email-vault/releases/latest) 下载最新的 `EmailVault-<版本>.dmg`，双击后把 Email Vault 拖到「应用程序」。
+
+本应用未经 Apple 公证。首次打开时系统会提示无法验证开发者：点「完成」，再到 **系统设置 → 隐私与安全性** 底部点「仍要打开」，只需一次。
+
+### 从源码构建
+
 要求：macOS 14+，Swift 5.9+ 工具链（Command Line Tools 即可，无需完整 Xcode）。
 
 ```bash
@@ -45,7 +51,7 @@ cd email-vault/email-swift
 
 版本号在 `email-swift/VERSION`，构建号取 git 提交数。只需要 `.app` 时用 `./scripts/build.sh`。
 
-构建产物未签名、未公证。本机构建的 App 可直接打开；DMG 拷到其他 Mac 后首次打开会被 Gatekeeper 拦截，需在 Finder 中右键 → 打开。
+构建产物为 ad-hoc 签名、未公证；本机构建的 App 可直接打开。
 
 首次启动设置主密码（至少 8 个字符）。**主密码无法找回**，遗忘即无法解密数据。
 
@@ -102,7 +108,8 @@ email-swift/
 ├── Sources/CArgon2/          Argon2 官方 C 参考实现（vendored）
 ├── Tests/                    Core 单元测试
 ├── scripts/build.sh          构建 .app，支持 --dry-run / --debug
-└── scripts/package-dmg.sh    打包拖拽安装 DMG，支持 --skip-build / --dry-run
+├── scripts/package-dmg.sh    打包拖拽安装 DMG，支持 --skip-build / --dry-run
+└── scripts/release.sh        发布 GitHub Release（读取 VERSION，打 tag，上传 DMG）
 ```
 
 ```bash
@@ -114,6 +121,8 @@ swift test            # 需要完整 Xcode（XCTest）
 - 设计说明：[`email-swift/docs/design.md`](email-swift/docs/design.md)
 - 数据格式与加密测试向量：[`docs/swift-rewrite-prompt.md`](docs/swift-rewrite-prompt.md)
 - 验收清单：[`email-swift/docs/ACCEPTANCE.md`](email-swift/docs/ACCEPTANCE.md)
+
+**发布新版本**：修改 `email-swift/VERSION` 并提交推送，然后运行 `./scripts/release.sh`（可先 `--dry-run` 预览发布说明）。
 
 开发调试一律使用临时数据库（`EMAIL_VAULT_DB`），不要直接操作真实数据。
 

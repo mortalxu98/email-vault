@@ -7,6 +7,7 @@ swift build                    # 编译
 swift test                     # Core 单元测试，需要完整 Xcode（XCTest）
 ./scripts/build.sh             # 打包 dist/Email Vault.app（--debug / --dry-run）
 ./scripts/package-dmg.sh       # 打包 dist/EmailVault-<VERSION>.dmg（--skip-build / --dry-run）
+./scripts/release.sh           # 发布 GitHub Release v<VERSION>（--dry-run 预览）
 ```
 
 | Target | 说明 |

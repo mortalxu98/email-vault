@@ -156,6 +156,13 @@ else
   echo "warning: $BRAND_PDFS not found; brand logos will fall back to initials" >&2
 fi
 
+# Ad-hoc sign the whole bundle so Info.plist and resources are sealed. Without this the
+# linker-only signature is invalid and Gatekeeper reports downloaded copies as "damaged".
+echo "==> Signing (ad-hoc)"
+run codesign --force --sign - --identifier local.email-vault --timestamp=none "$APP"
+if [[ "$DRY_RUN" -eq 0 ]]; then
+  codesign --verify --deep --strict "$APP"
+fi
+
 echo "==> Done: $APP ($VERSION build $BUILD_NUMBER)"
-echo "    Unsigned; open with: open \"$APP\""
-echo "    First launch may need right-click → Open (Gatekeeper)."
+echo "    Ad-hoc signed (not notarized); open with: open \"$APP\""
