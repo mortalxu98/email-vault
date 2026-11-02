@@ -8,7 +8,10 @@ cd "$ROOT"
 VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
 TAG="v$VERSION"
 DMG="$ROOT/dist/EmailVault-$VERSION.dmg"
+TAP_REPO="mortalxu98/homebrew-tap"
+CASK_PATH="Casks/email-vault.rb"
 DRY_RUN=0
+UPDATE_TAP=1
 
 usage() {
   cat <<USAGE
@@ -17,14 +20,18 @@ Usage: scripts/release.sh [--dry-run]
 Publishes Email Vault $VERSION (from VERSION) as GitHub Release $TAG with the DMG attached.
 Bump VERSION and commit before running. Requires: clean main branch pushed to origin, gh login.
 
+Then bumps the Homebrew cask in $TAP_REPO to the new version and checksum.
+
 Options:
   --dry-run   Check preconditions and print the release notes; publish nothing.
+  --skip-tap  Don't update the Homebrew cask.
 USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY_RUN=1; shift ;;
+    --skip-tap) UPDATE_TAP=0; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
   esac
@@ -132,4 +139,32 @@ gh release create "$TAG" "$DMG" \
   --notes-file "$NOTES_FILE" \
   --verify-tag
 
-echo "==> Done: $(gh release view "$TAG" --json url --jq .url)"
+echo "==> Released: $(gh release view "$TAG" --json url --jq .url)"
+
+# --- Homebrew cask ------------------------------------------------------------
+update_tap() {
+  local work
+  work="$(mktemp -d "${TMPDIR:-/tmp}/emailvault-tap.XXXXXX")"
+  # shellcheck disable=SC2064  # expand now: $work is local to this function
+  trap "rm -rf '$work' '$NOTES_FILE'" EXIT
+  gh repo clone "$TAP_REPO" "$work" -- --quiet
+  sed -i '' -E \
+    -e "s/^  version \"[^\"]+\"/  version \"$VERSION\"/" \
+    -e "s/^  sha256 \"[0-9a-f]+\"/  sha256 \"$SHA\"/" \
+    "$work/$CASK_PATH"
+  if git -C "$work" diff --quiet; then
+    echo "==> Cask already at $VERSION"
+    return
+  fi
+  git -C "$work" commit --quiet -am "email-vault $VERSION"
+  git -C "$work" push --quiet
+  echo "==> Updated $TAP_REPO/$CASK_PATH to $VERSION"
+}
+
+if [[ "$UPDATE_TAP" -eq 1 ]]; then
+  if gh repo view "$TAP_REPO" >/dev/null 2>&1; then
+    update_tap
+  else
+    echo "warning: $TAP_REPO not found; skipped cask update" >&2
+  fi
+fi
