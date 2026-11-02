@@ -125,6 +125,7 @@ final class AppModel: ObservableObject {
     }
 
     func lock() {
+        Clipboard.clearConcealed()
         key = nil
         isUnlocked = false
         emails = []

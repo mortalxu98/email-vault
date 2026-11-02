@@ -351,8 +351,15 @@ public final class Store: @unchecked Sendable {
 
     /// Consistent snapshot via SQLite backup API (passwords stay encrypted).
     public func export(to destination: URL) throws {
+        // Restrict permissions before any data is written to the file.
+        let fm = FileManager.default
+        if fm.fileExists(atPath: destination.path) {
+            try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
+        } else if !fm.createFile(atPath: destination.path, contents: nil, attributes: [.posixPermissions: 0o600]) {
+            throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: destination.path])
+        }
         try dbQueue.backup(to: DatabaseQueue(path: destination.path))
-        try FileManager.default.setAttributes(
+        try fm.setAttributes(
             [.posixPermissions: 0o600],
             ofItemAtPath: destination.path
         )

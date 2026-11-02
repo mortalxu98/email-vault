@@ -136,7 +136,7 @@ else
   chmod 755 "$MACOS/Email Vault"
 fi
 
-# App icon, shared with the Python build.
+# App icon.
 ICON="$ROOT/../assets/EmailVault.icns"
 if [[ -f "$ICON" ]]; then
   run cp "$ICON" "$RESOURCES/EmailVault.icns"
@@ -148,10 +148,9 @@ fi
 BRAND_PDFS="$ROOT/Sources/EmailVaultApp/Resources/BrandIcons"
 if [[ -d "$BRAND_PDFS" ]]; then
   run mkdir -p "$RESOURCES/BrandIcons"
-  run cp -R "$BRAND_PDFS/." "$RESOURCES/BrandIcons/" || true
-elif [[ -d "$ROOT/BrandIcons" ]]; then
-  run mkdir -p "$RESOURCES/BrandIcons"
-  run cp -R "$ROOT/BrandIcons/." "$RESOURCES/BrandIcons/" || true
+  run cp -R "$BRAND_PDFS/." "$RESOURCES/BrandIcons/"
+else
+  echo "warning: $BRAND_PDFS not found; brand logos will fall back to initials" >&2
 fi
 
 echo "==> Done: $APP"

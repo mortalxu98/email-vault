@@ -6,6 +6,8 @@ import Foundation
 enum Clipboard {
     private static let concealedType = NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")
     private static var clearWorkItem: DispatchWorkItem?
+    /// Pasteboard change count right after the last concealed copy.
+    private static var concealedChangeCount: Int?
 
     static func copy(_ text: String, conceal: Bool) {
         let pb = NSPasteboard.general
@@ -15,8 +17,10 @@ enum Clipboard {
             pb.setData(Data(), forType: concealedType)
         }
         clearWorkItem?.cancel()
+        concealedChangeCount = nil
         guard conceal else { return }
         let changeCount = pb.changeCount
+        concealedChangeCount = changeCount
         let item = DispatchWorkItem {
             let pb = NSPasteboard.general
             guard pb.changeCount == changeCount else { return }
@@ -26,6 +30,16 @@ enum Clipboard {
         }
         clearWorkItem = item
         DispatchQueue.main.asyncAfter(deadline: .now() + 30, execute: item)
+    }
+
+    /// Clear the pasteboard now if it still holds our last concealed copy.
+    static func clearConcealed() {
+        clearWorkItem?.cancel()
+        clearWorkItem = nil
+        defer { concealedChangeCount = nil }
+        let pb = NSPasteboard.general
+        guard let count = concealedChangeCount, pb.changeCount == count else { return }
+        pb.clearContents()
     }
 }
 #endif

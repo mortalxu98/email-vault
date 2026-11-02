@@ -32,8 +32,6 @@ public enum FieldCrypto {
                 throw CryptoError.decryptionFailed
             }
             return text
-        } catch is CryptoError {
-            throw CryptoError.decryptionFailed
         } catch {
             throw CryptoError.decryptionFailed
         }
