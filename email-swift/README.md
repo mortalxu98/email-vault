@@ -6,6 +6,7 @@ Email Vault 的 macOS 应用源码。功能、安装和安全模型见仓库根�
 swift build                    # 编译
 swift test                     # Core 单元测试，需要完整 Xcode（XCTest）
 ./scripts/build.sh             # 打包 dist/Email Vault.app（--debug / --dry-run）
+./scripts/package-dmg.sh       # 打包 dist/EmailVault-<VERSION>.dmg（--skip-build / --dry-run）
 ```
 
 | Target | 说明 |

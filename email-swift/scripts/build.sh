@@ -40,6 +40,9 @@ run() {
   fi
 }
 
+VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
+BUILD_NUMBER="$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || echo 1)"
+
 DIST="$ROOT/dist"
 APP="$DIST/Email Vault.app"
 CONTENTS="$APP/Contents"
@@ -88,7 +91,7 @@ INFO="$CONTENTS/Info.plist"
 if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "+ write Info.plist -> $INFO"
 else
-  cat > "$INFO" <<'PLIST'
+  cat > "$INFO" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -110,9 +113,9 @@ else
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0.0</string>
+  <string>${VERSION}</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>${BUILD_NUMBER}</string>
   <key>LSMinimumSystemVersion</key>
   <string>14.0</string>
   <key>NSHighResolutionCapable</key>
@@ -153,6 +156,6 @@ else
   echo "warning: $BRAND_PDFS not found; brand logos will fall back to initials" >&2
 fi
 
-echo "==> Done: $APP"
+echo "==> Done: $APP ($VERSION build $BUILD_NUMBER)"
 echo "    Unsigned; open with: open \"$APP\""
 echo "    First launch may need right-click → Open (Gatekeeper)."

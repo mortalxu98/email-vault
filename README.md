@@ -38,11 +38,14 @@
 ```bash
 git clone https://github.com/mortalxu98/email-vault.git
 cd email-vault/email-swift
-./scripts/build.sh                 # 输出 dist/Email Vault.app
-cp -R "dist/Email Vault.app" /Applications/
+./scripts/package-dmg.sh           # 构建并打包 dist/EmailVault-<版本>.dmg
 ```
 
-构建产物未签名。首次打开如被 Gatekeeper 拦截，在 Finder 中右键 → 打开。
+双击 DMG，把 Email Vault 拖到「应用程序」即可。升级时同样操作，选择替换；数据保存在 `~/.local/share/email-vault/`，不受影响。
+
+版本号在 `email-swift/VERSION`，构建号取 git 提交数。只需要 `.app` 时用 `./scripts/build.sh`。
+
+构建产物未签名、未公证。本机构建的 App 可直接打开；DMG 拷到其他 Mac 后首次打开会被 Gatekeeper 拦截，需在 Finder 中右键 → 打开。
 
 首次启动设置主密码（至少 8 个字符）。**主密码无法找回**，遗忘即无法解密数据。
 
@@ -98,7 +101,8 @@ email-swift/
 ├── Sources/EmailVaultApp/    SwiftUI 界面与应用状态
 ├── Sources/CArgon2/          Argon2 官方 C 参考实现（vendored）
 ├── Tests/                    Core 单元测试
-└── scripts/build.sh          构建 .app，支持 --dry-run / --debug
+├── scripts/build.sh          构建 .app，支持 --dry-run / --debug
+└── scripts/package-dmg.sh    打包拖拽安装 DMG，支持 --skip-build / --dry-run
 ```
 
 ```bash
