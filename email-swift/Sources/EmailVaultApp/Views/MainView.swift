@@ -40,6 +40,7 @@ struct MainView: View {
                     .help("总览")
                     Menu {
                         Button("导出备份…") { exportBackup() }
+                        Button("导出 CSV（明文）…") { model.showExportCSV = true }
                         Button("修改主密码…") { model.showChangePassword = true }
                         if model.touchIDAvailable {
                             Divider()
@@ -63,6 +64,9 @@ struct MainView: View {
         }
         .sheet(isPresented: $model.showChangePassword) {
             ChangePasswordSheet()
+        }
+        .sheet(isPresented: $model.showExportCSV) {
+            ExportCSVSheet()
         }
         .onAppear { model.refresh() }
         .onChange(of: model.searchQuery) { _, q in

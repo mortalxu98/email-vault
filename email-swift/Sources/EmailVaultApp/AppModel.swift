@@ -31,6 +31,7 @@ final class AppModel: ObservableObject {
     @Published var categoryFilter: String = "all"
     @Published var isBusy = false
     @Published var showChangePassword = false
+    @Published var showExportCSV = false
     @Published var touchIDEnabled = false
     let touchIDAvailable = BiometricStore.isAvailable
 
@@ -170,6 +171,7 @@ final class AppModel: ObservableObject {
     func lock() {
         Clipboard.clearConcealed()
         showChangePassword = false
+        showExportCSV = false
         touchIDTriedSinceLock = false
         key = nil
         isUnlocked = false
@@ -424,6 +426,25 @@ final class AppModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Re-check the master password before a sensitive action. Slow (Argon2), runs off the main actor.
+    func verifyMasterPassword(_ password: String) async -> Bool {
+        touch()
+        let vault = self.vault!
+        let ok = await Task.detached(priority: .userInitiated) {
+            (try? vault.unlock(password: password)) != nil
+        }.value
+        if !ok { try? await Task.sleep(nanoseconds: 1_000_000_000) }
+        return ok
+    }
+
+    /// Write every secret in clear text to `url` (0600).
+    func exportCSV(to url: URL) throws {
+        touch()
+        guard let key else { throw VaultError.invalidMasterPassword }
+        try CSVExporter.write(CSVExporter.export(store: store, key: key), to: url)
+        showToast("CSV 已导出，用完请删除")
     }
 
     func exportBackup(to url: URL) throws {
