@@ -35,11 +35,13 @@ public final class Store: @unchecked Sendable {
     """
 
     /// Columns added after the original schema. Additive only, so older builds can still open the DB.
-    static let addedAccountColumns: [(name: String, ddl: String)] = [
-        ("renew_at", "ALTER TABLE accounts ADD COLUMN renew_at TEXT"),
-        ("renew_cycle", "ALTER TABLE accounts ADD COLUMN renew_cycle TEXT NOT NULL DEFAULT ''"),
-        ("renew_amount", "ALTER TABLE accounts ADD COLUMN renew_amount TEXT NOT NULL DEFAULT ''"),
-        ("renew_lead_days", "ALTER TABLE accounts ADD COLUMN renew_lead_days INTEGER NOT NULL DEFAULT 7"),
+    static let addedColumns: [(table: String, name: String, ddl: String)] = [
+        ("accounts", "renew_at", "ALTER TABLE accounts ADD COLUMN renew_at TEXT"),
+        ("accounts", "renew_cycle", "ALTER TABLE accounts ADD COLUMN renew_cycle TEXT NOT NULL DEFAULT ''"),
+        ("accounts", "renew_amount", "ALTER TABLE accounts ADD COLUMN renew_amount TEXT NOT NULL DEFAULT ''"),
+        ("accounts", "renew_lead_days", "ALTER TABLE accounts ADD COLUMN renew_lead_days INTEGER NOT NULL DEFAULT 7"),
+        ("accounts", "secret_enc", "ALTER TABLE accounts ADD COLUMN secret_enc BLOB"),
+        ("emails", "secret_enc", "ALTER TABLE emails ADD COLUMN secret_enc BLOB"),
     ]
 
     /// Resolve DB path: `EMAIL_VAULT_DB` env wins; otherwise `~/.local/share/email-vault/vault.db`.
@@ -74,9 +76,12 @@ public final class Store: @unchecked Sendable {
 
     /// Add missing columns. Backs up a non-empty DB to `<db dir>/backups/` first.
     private func migrate() throws {
-        let missing = try dbQueue.read { db -> [(name: String, ddl: String)] in
-            let existing = Set(try db.columns(in: "accounts").map(\.name))
-            return Store.addedAccountColumns.filter { !existing.contains($0.name) }
+        let missing = try dbQueue.read { db -> [(table: String, name: String, ddl: String)] in
+            var existing: [String: Set<String>] = [:]
+            for table in Set(Store.addedColumns.map(\.table)) {
+                existing[table] = Set(try db.columns(in: table).map(\.name))
+            }
+            return Store.addedColumns.filter { existing[$0.table]?.contains($0.name) != true }
         }
         guard !missing.isEmpty else { return }
         try backup(label: "pre-migration")
@@ -123,13 +128,15 @@ public final class Store: @unchecked Sendable {
 
     private static let emailColumns = """
         e.id, e.address, e.note, e.password_enc IS NOT NULL AS has_password,
+        e.secret_enc IS NOT NULL AS has_secret,
         (SELECT COUNT(*) FROM accounts a WHERE a.email_id = e.id) AS account_count
     """
 
     private static let accountColumns = """
         a.id, a.email_id, e.address AS email_address, a.platform, a.category,
         a.username, a.password_enc IS NOT NULL AS has_password, a.url, a.note,
-        a.renew_at, a.renew_cycle, a.renew_amount, a.renew_lead_days
+        a.renew_at, a.renew_cycle, a.renew_amount, a.renew_lead_days,
+        a.secret_enc IS NOT NULL AS has_secret
     """
 
     public func listEmails(query: String = "") throws -> [EmailRecord] {
@@ -214,6 +221,48 @@ public final class Store: @unchecked Sendable {
             }
             return row["password_enc"] as Data?
         }
+    }
+
+    // MARK: - secure notes (encrypted)
+
+    public func getEmailSecret(_ emailId: Int64) throws -> Data? {
+        try fetchBlob(table: "emails", column: "secret_enc", id: emailId)
+    }
+
+    public func getAccountSecret(_ accountId: Int64) throws -> Data? {
+        try fetchBlob(table: "accounts", column: "secret_enc", id: accountId)
+    }
+
+    /// `secretEnc == nil` removes the secure note.
+    public func setEmailSecret(_ emailId: Int64, secretEnc: Data?) throws {
+        try setBlob(table: "emails", column: "secret_enc", id: emailId, value: secretEnc)
+    }
+
+    /// `secretEnc == nil` removes the secure note.
+    public func setAccountSecret(_ accountId: Int64, secretEnc: Data?) throws {
+        try setBlob(table: "accounts", column: "secret_enc", id: accountId, value: secretEnc)
+    }
+
+    private func fetchBlob(table: String, column: String, id: Int64) throws -> Data? {
+        try dbQueue.read { db in
+            guard let row = try Row.fetchOne(
+                db, sql: "SELECT \(column) AS blob FROM \(table) WHERE id = ?", arguments: [id]
+            ) else {
+                throw StoreError.notFound(id)
+            }
+            return row["blob"] as Data?
+        }
+    }
+
+    private func setBlob(table: String, column: String, id: Int64, value: Data?) throws {
+        let changed = try dbQueue.write { db -> Int in
+            try db.execute(
+                sql: "UPDATE \(table) SET \(column) = ?, updated_at = datetime('now') WHERE id = ?",
+                arguments: [value, id]
+            )
+            return db.changesCount
+        }
+        if changed == 0 { throw StoreError.notFound(id) }
     }
 
     // MARK: - accounts
@@ -454,7 +503,9 @@ public final class Store: @unchecked Sendable {
     /// Every column holding AES-GCM ciphertext under the vault key.
     public static let encryptedColumns: [(table: String, column: String)] = [
         ("emails", "password_enc"),
+        ("emails", "secret_enc"),
         ("accounts", "password_enc"),
+        ("accounts", "secret_enc"),
     ]
 
     /// Atomically rewrite every encrypted value with `transform` and store new meta (KDF params, verifier).
@@ -494,7 +545,8 @@ public final class Store: @unchecked Sendable {
             address: row["address"],
             note: row["note"],
             hasPassword: (row["has_password"] as Int64) != 0,
-            accountCount: Int(row["account_count"] as Int64)
+            accountCount: Int(row["account_count"] as Int64),
+            hasSecret: (row["has_secret"] as Int64) != 0
         )
     }
 
@@ -509,7 +561,8 @@ public final class Store: @unchecked Sendable {
             hasPassword: (row["has_password"] as Int64) != 0,
             url: row["url"],
             note: row["note"],
-            renewal: mapRenewal(row)
+            renewal: mapRenewal(row),
+            hasSecret: (row["has_secret"] as Int64) != 0
         )
     }
 

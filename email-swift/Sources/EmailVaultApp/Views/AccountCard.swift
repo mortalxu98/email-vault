@@ -71,6 +71,9 @@ struct AccountCard: View {
             if !account.note.isEmpty {
                 Text(account.note).font(.caption).foregroundStyle(.secondary)
             }
+            if account.hasSecret {
+                SecureNoteRow(load: { try model.decryptAccountSecret(account.id) })
+            }
             if let renewal = account.renewal {
                 RenewalBadge(renewal: renewal)
             }
@@ -140,9 +143,17 @@ struct AccountListRow: View {
                     wide: PlatformCatalog.wideLogos.contains(logoKey ?? "")
                 )
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(account.platform)
-                        .fontWeight(.medium)
-                        .lineLimit(1)
+                    HStack(spacing: 4) {
+                        Text(account.platform)
+                            .fontWeight(.medium)
+                            .lineLimit(1)
+                        if account.hasSecret {
+                            Image(systemName: "lock.doc")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .help("有安全备注，切到卡片视图查看")
+                        }
+                    }
                     Text(L10n.category(account.category))
                         .font(.caption2)
                         .foregroundStyle(categoryColor(account.category))

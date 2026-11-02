@@ -20,13 +20,15 @@ public struct EmailRecord: Identifiable, Equatable, Sendable {
     public var note: String
     public var hasPassword: Bool
     public var accountCount: Int
+    public var hasSecret: Bool
 
-    public init(id: Int64, address: String, note: String, hasPassword: Bool, accountCount: Int) {
+    public init(id: Int64, address: String, note: String, hasPassword: Bool, accountCount: Int, hasSecret: Bool = false) {
         self.id = id
         self.address = address
         self.note = note
         self.hasPassword = hasPassword
         self.accountCount = accountCount
+        self.hasSecret = hasSecret
     }
 }
 
@@ -41,6 +43,7 @@ public struct AccountRecord: Identifiable, Equatable, Sendable {
     public var url: String
     public var note: String
     public var renewal: Renewal?
+    public var hasSecret: Bool
 
     public init(
         id: Int64,
@@ -52,7 +55,8 @@ public struct AccountRecord: Identifiable, Equatable, Sendable {
         hasPassword: Bool,
         url: String,
         note: String,
-        renewal: Renewal? = nil
+        renewal: Renewal? = nil,
+        hasSecret: Bool = false
     ) {
         self.id = id
         self.emailId = emailId
@@ -64,6 +68,7 @@ public struct AccountRecord: Identifiable, Equatable, Sendable {
         self.url = url
         self.note = note
         self.renewal = renewal
+        self.hasSecret = hasSecret
     }
 }
 

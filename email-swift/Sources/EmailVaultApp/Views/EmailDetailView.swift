@@ -97,6 +97,10 @@ struct EmailDetailView: View {
                 if !email.note.isEmpty {
                     Text(email.note).foregroundStyle(.secondary)
                 }
+                if email.hasSecret {
+                    SecureNoteRow(load: { try model.decryptEmailSecret(email.id) })
+                        .id(email.id)
+                }
                 Text(L10n.notePlaintext)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)

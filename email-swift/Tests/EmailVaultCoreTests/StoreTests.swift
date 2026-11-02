@@ -191,4 +191,22 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(try VaultCrypto.decrypt(try store.getEmailPassword(eid)!, with: k2), "mail")
         XCTAssertEqual(try VaultCrypto.decrypt(try store.getAccountPassword(aid)!, with: k2), "gh")
     }
+
+    func testSecureNoteRoundTripAndRekey() throws {
+        let vault = Vault(store: store)
+        let k1 = try vault.initialize(password: "old-password-1")
+        let eid = try store.createEmail(address: "s@gmail.com", note: "", passwordEnc: nil)
+        let aid = try store.createAccount(
+            emailId: eid, platform: "MetaMask", category: "crypto",
+            username: "", url: "", note: "", passwordEnc: nil
+        )
+        try store.setAccountSecret(aid, secretEnc: try VaultCrypto.encrypt("seed", with: k1))
+        XCTAssertTrue(try store.getAccount(aid)!.hasSecret)
+
+        let k2 = try vault.changePassword(current: "old-password-1", new: "new-password-2")
+        XCTAssertEqual(try VaultCrypto.decrypt(try store.getAccountSecret(aid)!, with: k2), "seed")
+
+        try store.setAccountSecret(aid, secretEnc: nil)
+        XCTAssertFalse(try store.getAccount(aid)!.hasSecret)
+    }
 }

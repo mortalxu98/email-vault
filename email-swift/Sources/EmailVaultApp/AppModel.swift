@@ -240,6 +240,33 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func decryptEmailSecret(_ id: Int64) throws -> String? {
+        try decrypt { try store.getEmailSecret(id) }
+    }
+
+    func decryptAccountSecret(_ id: Int64) throws -> String? {
+        try decrypt { try store.getAccountSecret(id) }
+    }
+
+    /// Encrypt a secure note; blank text means "remove" (nil).
+    func encryptSecret(_ text: String) throws -> Data? {
+        guard let key else { throw VaultError.invalidMasterPassword }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : try VaultCrypto.encrypt(trimmed, with: key)
+    }
+
+    private func decrypt(_ fetch: () throws -> Data?) throws -> String? {
+        touch()
+        guard let key else { return nil }
+        do {
+            guard let blob = try fetch() else { return nil }
+            return try VaultCrypto.decrypt(blob, with: key)
+        } catch {
+            showToast(L10n.decryptFailed)
+            throw error
+        }
+    }
+
     func platformCatalog() -> [PlatformCatalog.CatalogEntry] {
         let user = (try? store.distinctPlatforms()) ?? []
         return PlatformCatalog.catalog(userPlatforms: user.map { ($0.0, $0.1, $0.2) })

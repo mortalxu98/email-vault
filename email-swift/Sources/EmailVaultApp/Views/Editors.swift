@@ -45,6 +45,8 @@ struct EmailEditorSheet: View {
     @State private var address = ""
     @State private var note = ""
     @State private var password = ""
+    @State private var secret = ""
+    @State private var secretLoaded = true
     @State private var error: String?
 
     var body: some View {
@@ -61,6 +63,13 @@ struct EmailEditorSheet: View {
                 .textFieldStyle(.roundedBorder)
             Text(L10n.notePlaintext)
                 .font(.caption2).foregroundStyle(.secondary)
+            Text(L10n.secureNote).font(.subheadline.weight(.medium))
+            SecureNoteEditor(
+                text: $secret,
+                loaded: $secretLoaded,
+                hasExisting: email?.hasSecret ?? false,
+                load: { try email.flatMap { try model.decryptEmailSecret($0.id) } }
+            )
             if let error { Text(error).foregroundStyle(.red) }
             HStack {
                 Spacer()
@@ -74,6 +83,7 @@ struct EmailEditorSheet: View {
             if let email {
                 address = email.address
                 note = email.note
+                secretLoaded = !email.hasSecret
             }
         }
     }
@@ -88,12 +98,15 @@ struct EmailEditorSheet: View {
         }
         do {
             let enc: Data? = password.isEmpty ? nil : try VaultCrypto.encrypt(password, with: key)
+            let secretEnc = secretLoaded ? try model.encryptSecret(secret) : nil
             if let email {
                 try model.store.updateEmail(id: email.id, address: address, note: note, passwordEnc: enc)
+                if secretLoaded { try model.store.setEmailSecret(email.id, secretEnc: secretEnc) }
                 model.selectEmail(email.id)
             } else {
                 let createEnc: Data? = password.isEmpty ? nil : enc
                 let id = try model.store.createEmail(address: address, note: note, passwordEnc: createEnc)
+                if secretEnc != nil { try model.store.setEmailSecret(id, secretEnc: secretEnc) }
                 model.selectEmail(id)
             }
             model.refresh()
@@ -118,6 +131,8 @@ struct AccountEditorSheet: View {
     @State private var password = ""
     @State private var url = ""
     @State private var note = ""
+    @State private var secret = ""
+    @State private var secretLoaded = true
     @State private var renewOn = false
     @State private var renewDate = Date()
     @State private var renewCycle: RenewalCycle = .yearly
@@ -184,6 +199,13 @@ struct AccountEditorSheet: View {
                 .textFieldStyle(.roundedBorder)
             TextField("备注", text: $note)
                 .textFieldStyle(.roundedBorder)
+            Text(L10n.secureNote).font(.subheadline.weight(.medium))
+            SecureNoteEditor(
+                text: $secret,
+                loaded: $secretLoaded,
+                hasExisting: account?.hasSecret ?? false,
+                load: { try account.flatMap { try model.decryptAccountSecret($0.id) } }
+            )
             RenewalEditorSection(
                 enabled: $renewOn,
                 dueDate: $renewDate,
@@ -207,6 +229,7 @@ struct AccountEditorSheet: View {
                 username = account.username
                 url = account.url
                 note = account.note
+                secretLoaded = !account.hasSecret
                 if let r = account.renewal {
                     renewOn = true
                     renewDate = Renewal.parse(r.dueDate) ?? Date()
@@ -287,19 +310,22 @@ struct AccountEditorSheet: View {
             : nil
         do {
             let enc: Data? = password.isEmpty ? nil : try VaultCrypto.encrypt(password, with: key)
+            let secretEnc = secretLoaded ? try model.encryptSecret(secret) : nil
             if let account {
                 try model.store.updateAccount(
                     id: account.id, platform: platform, category: category,
                     username: username, url: url, note: note, passwordEnc: enc,
                     renewal: renewal
                 )
+                if secretLoaded { try model.store.setAccountSecret(account.id, secretEnc: secretEnc) }
             } else {
-                _ = try model.store.createAccount(
+                let id = try model.store.createAccount(
                     emailId: emailId, platform: platform, category: category,
                     username: username, url: url, note: note,
                     passwordEnc: password.isEmpty ? nil : enc,
                     renewal: renewal
                 )
+                if secretEnc != nil { try model.store.setAccountSecret(id, secretEnc: secretEnc) }
             }
             model.refresh()
             dismiss()

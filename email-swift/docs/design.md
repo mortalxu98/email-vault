@@ -39,7 +39,11 @@ email-swift/
 
 ## 存储
 
-表结构在 Python 版基础上只做**加列**：`accounts` 新增 `renew_at`（`yyyy-MM-dd`，NULL 表示无提醒）、`renew_cycle`（`once`/`monthly`/`yearly`）、`renew_amount`、`renew_lead_days`（默认 7）。`Store` 打开时检查缺失列并 `ALTER TABLE ADD COLUMN`；库里已有数据时，先用 SQLite 备份 API 备份到 `<库目录>/backups/vault-pre-migration-<日期>-<时间戳>.db`（0600）。旧版程序仍能打开迁移后的库。
+表结构在 Python 版基础上只做**加列**：`accounts` 新增 `renew_at`（`yyyy-MM-dd`，NULL 表示无提醒）、`renew_cycle`（`once`/`monthly`/`yearly`）、`renew_amount`、`renew_lead_days`（默认 7），`emails`/`accounts` 新增 `secret_enc`（安全备注，AES-GCM 加密，格式同密码）。`Store` 打开时检查缺失列并 `ALTER TABLE ADD COLUMN`；库里已有数据时，先用 SQLite 备份 API 备份到 `<库目录>/backups/vault-pre-migration-<日期>-<时间戳>.db`（0600）。旧版程序仍能打开迁移后的库。
+
+修改主密码：校验当前密码 → 新 salt 派生新密钥 → 备份 → 单事务内重加密 `Store.encryptedColumns` 中的所有密文并写入新 `kdf_params`/`key_verifier`，任一条解密失败整体回滚。
+
+系统事件锁定：睡眠、屏幕休眠、锁屏、屏保启动、切换用户时立即锁定。
 
 续费提醒：到期日减去今天 ≤ 提前天数（含已过期）时，详情区顶部显示提醒横幅；「已续费」按周期顺延（月末自动对齐，如 1/31 → 2/28），一次性的直接移除提醒。
 
