@@ -48,9 +48,23 @@ fi
 
 # --- notes -------------------------------------------------------------------
 PREV_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
-RANGE="${PREV_TAG:+$PREV_TAG..}HEAD"
-CHANGES="$(git log --no-merges --format='- %s' "$RANGE" | grep -E '^- (feat|fix|perf)(\(|:)' || true)"
-[[ -n "$CHANGES" ]] || CHANGES="- 维护性更新"
+
+# Conventional-commit subjects of one type since the previous tag, prefix stripped.
+commits_of() {
+  git log --no-merges --format='%s' "$PREV_TAG..HEAD" \
+    | sed -nE "s/^$1(\([^)]*\))?!?: (.*)/- \2/p"
+}
+
+if [[ -z "$PREV_TAG" ]]; then
+  CHANGES="首个发布版本：邮箱与平台账号管理、加密安全备注、续费提醒、Touch ID 解锁、修改主密码、自动锁定。完整功能见 [README](https://github.com/mortalxu98/email-vault#readme)。"
+else
+  FEATS="$(commits_of feat)"
+  FIXES="$(commits_of '(fix|perf)')"
+  CHANGES=""
+  [[ -n "$FEATS" ]] && CHANGES+=$'### 新功能\n\n'"$FEATS"$'\n\n'
+  [[ -n "$FIXES" ]] && CHANGES+=$'### 修复\n\n'"$FIXES"$'\n'
+  [[ -n "$CHANGES" ]] || CHANGES="维护性更新。"
+fi
 
 build_notes() {
   local sha="$1"
