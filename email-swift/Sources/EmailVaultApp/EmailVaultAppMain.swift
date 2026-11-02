@@ -15,6 +15,10 @@ struct EmailVaultApp: App {
                 .frame(minWidth: 760, minHeight: 560)
         }
         .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("关于 Email Vault") { AppInfo.showAbout() }
+                Button("检查更新…") { AppInfo.checkForUpdates() }
+            }
             CommandGroup(replacing: .newItem) {
                 Button(L10n.newEmail) {
                     appModel.requestNewEmail = true
