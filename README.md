@@ -52,13 +52,21 @@
 
 ## Install
 
-Download the latest `EmailVault-<version>.dmg` from [Releases](https://github.com/mortalxu98/email-vault/releases/latest), open it and drag Email Vault into Applications. Requires macOS 14+ on Apple silicon.
+With [Homebrew](https://brew.sh):
+
+```bash
+brew tap mortalxu98/tap
+brew trust mortalxu98/tap      # Homebrew 7+ asks you to trust third-party taps
+brew install --cask email-vault
+```
+
+Or download the latest `EmailVault-<version>.dmg` from [Releases](https://github.com/mortalxu98/email-vault/releases/latest), open it and drag Email Vault into Applications. Requires macOS 14+ on Apple silicon.
 
 The app is not notarized by Apple. On first launch macOS says it can't verify the developer: click **Done**, then go to **System Settings → Privacy & Security** and click **Open Anyway** at the bottom. You only need to do this once.
 
 On first launch you set a master password (8+ characters). **It cannot be recovered** — if you forget it, the data cannot be decrypted.
 
-To upgrade, drag the new version into Applications and choose Replace. Your data lives in `~/.local/share/email-vault/` and is left untouched. **Email Vault → Check for Updates…** opens the latest release page.
+To upgrade, run `brew upgrade --cask email-vault`, or drag the new version into Applications and choose Replace. Your data lives in `~/.local/share/email-vault/` and is left untouched. **Email Vault → Check for Updates…** opens the latest release page.
 
 ### Build from source
 

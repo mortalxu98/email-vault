@@ -52,13 +52,21 @@
 
 ## 安装
 
-从 [Releases](https://github.com/mortalxu98/email-vault/releases/latest) 下载最新的 `EmailVault-<版本>.dmg`，双击后把 Email Vault 拖到「应用程序」。要求 macOS 14+，Apple 芯片。
+使用 [Homebrew](https://brew.sh)：
+
+```bash
+brew tap mortalxu98/tap
+brew trust mortalxu98/tap      # Homebrew 7 起需要先信任第三方 tap
+brew install --cask email-vault
+```
+
+或者从 [Releases](https://github.com/mortalxu98/email-vault/releases/latest) 下载最新的 `EmailVault-<版本>.dmg`，双击后把 Email Vault 拖到「应用程序」。要求 macOS 14+，Apple 芯片。
 
 本应用未经 Apple 公证。首次打开时系统会提示无法验证开发者：点「完成」，再到 **系统设置 → 隐私与安全性** 底部点「仍要打开」，只需一次。
 
 首次启动需设置主密码（至少 8 个字符）。**主密码无法找回**，遗忘即无法解密数据。
 
-升级：下载新版 DMG，拖入「应用程序」并选择替换。数据保存在 `~/.local/share/email-vault/`，不受影响。也可以在菜单「Email Vault → 检查更新…」打开最新版本页面。
+升级：`brew upgrade --cask email-vault`，或下载新版 DMG 拖入「应用程序」并选择替换。数据保存在 `~/.local/share/email-vault/`，不受影响。也可以在菜单「Email Vault → 检查更新…」打开最新版本页面。
 
 ### 从源码构建
 

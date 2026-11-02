@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### 新增
+
+- 支持通过 Homebrew 安装：`brew install --cask mortalxu98/tap/email-vault`。
+
 ## [1.1.0] - 2026-11-03
 
 ### 新增
