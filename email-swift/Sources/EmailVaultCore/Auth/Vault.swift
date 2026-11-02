@@ -35,6 +35,26 @@ public final class Vault: @unchecked Sendable {
         return key
     }
 
+    /// Verify `current`, then re-encrypt every secret under a key derived from `new` with a fresh salt.
+    /// Backs up the DB first; the rewrite is a single transaction. Returns the new key.
+    public func changePassword(current: String, new: String) throws -> SymmetricKey {
+        lock.lock()
+        defer { lock.unlock() }
+        let oldKey = try unlock(password: current)
+        let params = KdfParams.generate()
+        let newKey = try VaultCrypto.deriveKey(password: new, params: params)
+        let verifier = try VaultCrypto.encrypt(VaultCrypto.verifierPlaintext, with: newKey)
+        try store.backup(label: "pre-password-change")
+        try store.reencryptAll(meta: [
+            VaultCrypto.metaKdf: try params.toJSON(),
+            VaultCrypto.metaVerifier: verifier.hexString,
+        ]) { blob in
+            let plaintext = try VaultCrypto.decrypt(blob, with: oldKey)
+            return try VaultCrypto.encrypt(plaintext, with: newKey)
+        }
+        return newKey
+    }
+
     /// Unlock with master password. On failure, caller should delay ~1s before returning to UI.
     public func unlock(password: String) throws -> SymmetricKey {
         guard

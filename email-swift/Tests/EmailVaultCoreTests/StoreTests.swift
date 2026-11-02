@@ -174,4 +174,21 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(Renewal(dueDate: "2024-02-29", cycle: .yearly).renewed()?.dueDate, "2025-02-28")
         XCTAssertNil(Renewal(dueDate: "2026-01-31", cycle: .once).renewed())
     }
+
+    func testChangePasswordReencryptsEverything() throws {
+        let vault = Vault(store: store)
+        let k1 = try vault.initialize(password: "old-password-1")
+        let eid = try store.createEmail(address: "a@gmail.com", note: "", passwordEnc: try VaultCrypto.encrypt("mail", with: k1))
+        let aid = try store.createAccount(
+            emailId: eid, platform: "GitHub", category: "other",
+            username: "", url: "", note: "", passwordEnc: try VaultCrypto.encrypt("gh", with: k1)
+        )
+        XCTAssertThrowsError(try vault.changePassword(current: "wrong", new: "new-password-2"))
+
+        let k2 = try vault.changePassword(current: "old-password-1", new: "new-password-2")
+        XCTAssertThrowsError(try vault.unlock(password: "old-password-1"))
+        XCTAssertNoThrow(try vault.unlock(password: "new-password-2"))
+        XCTAssertEqual(try VaultCrypto.decrypt(try store.getEmailPassword(eid)!, with: k2), "mail")
+        XCTAssertEqual(try VaultCrypto.decrypt(try store.getAccountPassword(aid)!, with: k2), "gh")
+    }
 }

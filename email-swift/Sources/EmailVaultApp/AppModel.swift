@@ -26,6 +26,7 @@ final class AppModel: ObservableObject {
     @Published var accountViewMode: AccountViewMode = .grid
     @Published var categoryFilter: String = "all"
     @Published var isBusy = false
+    @Published var showChangePassword = false
 
     enum AccountViewMode: String {
         case grid, list
@@ -153,6 +154,7 @@ final class AppModel: ObservableObject {
 
     func lock() {
         Clipboard.clearConcealed()
+        showChangePassword = false
         key = nil
         isUnlocked = false
         emails = []
@@ -246,6 +248,32 @@ final class AppModel: ObservableObject {
     func setViewMode(_ mode: AccountViewMode) {
         accountViewMode = mode
         UserDefaults.standard.set(mode.rawValue, forKey: "email-vault:view")
+    }
+
+    /// Returns an error message, or nil on success.
+    func changePassword(current: String, new: String, confirm: String) async -> String? {
+        touch()
+        guard new.count >= 8 else { return L10n.passwordTooShort }
+        guard new == confirm else { return L10n.passwordMismatch }
+        guard new != current else { return "新密码不能与当前密码相同。" }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let vault = self.vault!
+            let k = try await Task.detached(priority: .userInitiated) {
+                try vault.changePassword(current: current, new: new)
+            }.value
+            // Vault may have been locked (sleep etc.) while re-encrypting.
+            if isUnlocked { key = k }
+            touch()
+            showToast("主密码已修改")
+            return nil
+        } catch VaultError.invalidMasterPassword {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            return "当前主密码错误。"
+        } catch {
+            return "修改失败，数据未改动：\(error)"
+        }
     }
 
     /// Roll the due date forward one cycle, or drop a one-off reminder.

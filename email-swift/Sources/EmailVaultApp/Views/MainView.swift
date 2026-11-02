@@ -30,6 +30,9 @@ struct MainView: View {
                 }
             }
         }
+        .sheet(isPresented: $model.showChangePassword) {
+            ChangePasswordSheet()
+        }
         .onAppear { model.refresh() }
         .onChange(of: model.searchQuery) { _, q in
             model.refresh()

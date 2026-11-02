@@ -31,6 +31,11 @@ struct EmailVaultApp: App {
                     appModel.lock()
                 }
                 .keyboardShortcut("l", modifiers: .command)
+                .disabled(!appModel.isUnlocked)
+                Button("修改主密码…") {
+                    appModel.showChangePassword = true
+                }
+                .disabled(!appModel.isUnlocked)
                 Button("聚焦搜索") {
                     appModel.focusSearch = true
                 }

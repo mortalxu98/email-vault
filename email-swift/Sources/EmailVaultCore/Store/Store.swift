@@ -79,18 +79,7 @@ public final class Store: @unchecked Sendable {
             return Store.addedAccountColumns.filter { !existing.contains($0.name) }
         }
         guard !missing.isEmpty else { return }
-        let hasData = try dbQueue.read { db in
-            (try Int.fetchOne(db, sql: "SELECT (SELECT COUNT(*) FROM emails) + (SELECT COUNT(*) FROM meta)") ?? 0) > 0
-        }
-        if hasData {
-            let dir = path.deletingLastPathComponent().appendingPathComponent("backups", isDirectory: true)
-            try FileManager.default.createDirectory(
-                at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700]
-            )
-            let stamp = Renewal.format(Date()) + "-" + String(Int(Date().timeIntervalSince1970))
-            let name = path.deletingPathExtension().lastPathComponent
-            try export(to: dir.appendingPathComponent("\(name)-pre-migration-\(stamp).db"))
-        }
+        try backup(label: "pre-migration")
         try dbQueue.write { db in
             for column in missing {
                 try db.execute(sql: column.ddl)
@@ -439,6 +428,62 @@ public final class Store: @unchecked Sendable {
             [.posixPermissions: 0o600],
             ofItemAtPath: destination.path
         )
+    }
+
+    /// Snapshot to `<db dir>/backups/<name>-<label>-<date>-<epoch>.db` before a risky write.
+    /// Skipped (returns nil) when the vault is empty.
+    @discardableResult
+    public func backup(label: String) throws -> URL? {
+        let hasData = try dbQueue.read { db in
+            (try Int.fetchOne(db, sql: "SELECT (SELECT COUNT(*) FROM emails) + (SELECT COUNT(*) FROM meta)") ?? 0) > 0
+        }
+        guard hasData else { return nil }
+        let dir = path.deletingLastPathComponent().appendingPathComponent("backups", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700]
+        )
+        let stamp = Renewal.format(Date()) + "-" + String(Int(Date().timeIntervalSince1970))
+        let name = path.deletingPathExtension().lastPathComponent
+        let url = dir.appendingPathComponent("\(name)-\(label)-\(stamp).db")
+        try export(to: url)
+        return url
+    }
+
+    // MARK: - re-encryption
+
+    /// Every column holding AES-GCM ciphertext under the vault key.
+    public static let encryptedColumns: [(table: String, column: String)] = [
+        ("emails", "password_enc"),
+        ("accounts", "password_enc"),
+    ]
+
+    /// Atomically rewrite every encrypted value with `transform` and store new meta (KDF params, verifier).
+    /// Any thrown error rolls back the whole transaction.
+    public func reencryptAll(meta: [String: String], transform: (Data) throws -> Data) throws {
+        try dbQueue.write { db in
+            for (table, column) in Self.encryptedColumns {
+                let rows = try Row.fetchAll(
+                    db, sql: "SELECT id, \(column) AS blob FROM \(table) WHERE \(column) IS NOT NULL"
+                )
+                for row in rows {
+                    let id: Int64 = row["id"]
+                    let blob: Data = row["blob"]
+                    try db.execute(
+                        sql: "UPDATE \(table) SET \(column) = ? WHERE id = ?",
+                        arguments: [try transform(blob), id]
+                    )
+                }
+            }
+            for (key, value) in meta {
+                try db.execute(
+                    sql: """
+                    INSERT INTO meta (key, value) VALUES (?, ?)
+                    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                    """,
+                    arguments: [key, value]
+                )
+            }
+        }
     }
 
     // MARK: - mapping
