@@ -13,15 +13,15 @@ struct ChangePasswordSheet: View {
         VStack(alignment: .leading, spacing: 0) {
             Form {
                 Section {
-                    RevealableSecureField("当前主密码", text: $current)
+                    RevealableSecureField(tr("当前主密码"), text: $current)
                 } header: {
-                    Text("修改主密码")
+                    Text(tr("修改主密码"))
                 }
                 Section {
-                    RevealableSecureField("新主密码（至少 8 个字符）", text: $new)
+                    RevealableSecureField(tr("新主密码（至少 8 个字符）"), text: $new)
                     RevealableSecureField(L10n.confirmPassword, text: $confirm)
                 } footer: {
-                    Text("所有密码会用新主密码重新加密。修改前会自动备份数据库到 backups 目录。")
+                    Text(tr("所有密码会用新主密码重新加密。修改前会自动备份数据库到 backups 目录。"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -36,7 +36,7 @@ struct ChangePasswordSheet: View {
                 Spacer()
                 Button(L10n.cancel) { dismiss() }
                     .disabled(model.isBusy)
-                Button(model.isBusy ? "修改中…" : "修改") {
+                Button(model.isBusy ? tr("修改中…") : tr("修改")) {
                     Task { await submit() }
                 }
                 .keyboardShortcut(.defaultAction)

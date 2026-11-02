@@ -92,7 +92,7 @@ struct AccountCard: View {
         .sheet(isPresented: $showEdit) {
             AccountEditorSheet(emailId: account.emailId, account: account)
         }
-        .confirmationDialog("删除 \(account.platform)？", isPresented: $showDelete) {
+        .confirmationDialog(trf("删除 %@？", account.platform), isPresented: $showDelete) {
             Button(L10n.delete, role: .destructive) {
                 try? model.store.deleteAccount(account.id)
                 model.refresh()
@@ -154,7 +154,7 @@ struct AccountListRow: View {
                             Image(systemName: "lock.doc")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
-                                .help("有安全备注，切到卡片视图查看")
+                                .help(tr("有安全备注，切到卡片视图查看"))
                         }
                     }
                     Text(L10n.category(account.category))
@@ -236,7 +236,7 @@ struct AccountListRow: View {
         .sheet(isPresented: $showEdit) {
             AccountEditorSheet(emailId: account.emailId, account: account)
         }
-        .confirmationDialog("删除 \(account.platform)？", isPresented: $showDelete) {
+        .confirmationDialog(trf("删除 %@？", account.platform), isPresented: $showDelete) {
             Button(L10n.delete, role: .destructive) {
                 try? model.store.deleteAccount(account.id)
                 model.refresh()
@@ -254,24 +254,24 @@ struct AccountContextMenu: View {
 
     var body: some View {
         if !account.username.isEmpty {
-            Button("复制用户名") { model.copy(account.username, conceal: false) }
+            Button(tr("复制用户名")) { model.copy(account.username, conceal: false) }
         }
         if account.hasPassword {
-            Button("复制密码") {
+            Button(tr("复制密码")) {
                 if let pw = try? model.decryptAccountPassword(account.id) {
                     model.copy(pw, conceal: true)
                 }
             }
         }
         if account.hasSecret {
-            Button("复制安全备注") {
+            Button(tr("复制安全备注")) {
                 if let note = try? model.decryptAccountSecret(account.id) {
                     model.copy(note, conceal: true)
                 }
             }
         }
         if let url = sanitizedURL(account.url) {
-            Button("打开网址") { NSWorkspace.shared.open(url) }
+            Button(tr("打开网址")) { NSWorkspace.shared.open(url) }
         }
         Divider()
         Button(L10n.edit, action: onEdit)
@@ -327,7 +327,7 @@ struct SecretRow: View {
                     Image(systemName: revealed == nil ? "eye" : "eye.slash")
                 }
                 .buttonStyle(.borderless)
-                .help(revealed == nil ? "显示" : "隐藏")
+                .help(revealed == nil ? tr("显示") : tr("隐藏"))
                 Button {
                     if let pw = (revealed ?? (try? load())) {
                         onCopy(pw)
@@ -336,7 +336,7 @@ struct SecretRow: View {
                     Image(systemName: "doc.on.doc")
                 }
                 .buttonStyle(.borderless)
-                .help("复制")
+                .help(tr("复制"))
             }
         }
     }

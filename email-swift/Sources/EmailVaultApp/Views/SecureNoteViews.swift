@@ -20,7 +20,7 @@ struct SecureNoteRow: View {
                     Image(systemName: revealed == nil ? "eye" : "eye.slash")
                 }
                 .buttonStyle(.borderless)
-                .help(revealed == nil ? "显示" : "隐藏")
+                .help(revealed == nil ? tr("显示") : tr("隐藏"))
                 Button {
                     if let text = revealed ?? (try? load()) {
                         model.copy(text, conceal: true)
@@ -29,7 +29,7 @@ struct SecureNoteRow: View {
                     Image(systemName: "doc.on.doc")
                 }
                 .buttonStyle(.borderless)
-                .help("复制")
+                .help(tr("复制"))
             }
             .font(.caption)
             if let revealed {
@@ -61,16 +61,16 @@ struct SecureNoteEditor: View {
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 56, maxHeight: 120)
                     .scrollContentBackground(.hidden)
-                Text("加密保存，适合助记词、恢复码、2FA 密钥。清空即删除。")
+                Text(tr("加密保存，适合助记词、恢复码、2FA 密钥。清空即删除。"))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         } else {
             HStack {
-                Label(hasExisting ? "已有安全备注（加密）" : "无", systemImage: "lock.doc")
+                Label(hasExisting ? tr("已有安全备注（加密）") : tr("无"), systemImage: "lock.doc")
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("解密编辑") {
+                Button(tr("解密编辑")) {
                     if let value = try? load() {
                         text = value
                         loaded = true

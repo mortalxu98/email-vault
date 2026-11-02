@@ -97,6 +97,11 @@ else
 <dict>
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>en</string>
+    <string>zh-Hans</string>
+  </array>
   <key>CFBundleExecutable</key>
   <string>Email Vault</string>
   <key>CFBundleIconFile</key>
@@ -154,6 +159,11 @@ if [[ -d "$BRAND_PDFS" ]]; then
 else
   echo "warning: $BRAND_PDFS not found; brand logos will fall back to initials" >&2
 fi
+
+# UI translations (Localization/*.lproj); also makes system menus follow the user's language.
+for lproj in "$ROOT"/Localization/*.lproj; do
+  run cp -R "$lproj" "$RESOURCES/"
+done
 
 # Ad-hoc sign the whole bundle so Info.plist and resources are sealed. Without this the
 # linker-only signature is invalid and Gatekeeper reports downloaded copies as "damaged".

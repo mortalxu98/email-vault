@@ -32,7 +32,7 @@ struct UnlockView: View {
                 Button {
                     Task { await model.unlockWithTouchID() }
                 } label: {
-                    Label("使用 Touch ID 解锁", systemImage: "touchid")
+                    Label(tr("使用 Touch ID 解锁"), systemImage: "touchid")
                 }
                 .buttonStyle(.link)
                 .disabled(model.isBusy)

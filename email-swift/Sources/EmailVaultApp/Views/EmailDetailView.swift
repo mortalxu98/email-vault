@@ -26,7 +26,7 @@ struct EmailDetailView: View {
             AccountEditorSheet(emailId: email.id, account: nil)
         }
         .confirmationDialog(
-            "删除 \(email.address)？将同时删除 \(email.accountCount) 个服务。",
+            trf("删除 %@？将同时删除 %ld 个服务。", email.address, email.accountCount),
             isPresented: $showDelete,
             titleVisibility: .visible
         ) {
@@ -95,7 +95,7 @@ struct EmailDetailView: View {
                 Button(role: .destructive) {
                     showDelete = true
                 } label: {
-                    Label("删除邮箱…", systemImage: "trash")
+                    Label(tr("删除邮箱…"), systemImage: "trash")
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
@@ -103,7 +103,7 @@ struct EmailDetailView: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .help("更多")
+            .help(tr("更多"))
         }
         .padding(20)
         .background(.quaternary.opacity(0.35))
@@ -119,7 +119,7 @@ struct EmailDetailView: View {
             HStack {
                 categoryChips
                 Spacer()
-                Picker("视图", selection: Binding(
+                Picker(tr("视图"), selection: Binding(
                     get: { model.accountViewMode },
                     set: { model.setViewMode($0) }
                 )) {
@@ -129,7 +129,7 @@ struct EmailDetailView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .frame(width: 80)
-                .help("卡片 / 列表")
+                .help(tr("卡片 / 列表"))
                 Button {
                     showNewAccount = true
                 } label: {

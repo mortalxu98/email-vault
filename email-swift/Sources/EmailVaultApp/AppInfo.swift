@@ -19,7 +19,7 @@ enum AppInfo {
 
     static func showAbout() {
         let credits = NSMutableAttributedString(
-            string: "本地加密的邮箱与平台账号保险箱\n",
+            string: tr("本地加密的邮箱与平台账号保险箱\n"),
             attributes: [
                 .font: NSFont.systemFont(ofSize: 11),
                 .foregroundColor: NSColor.secondaryLabelColor,

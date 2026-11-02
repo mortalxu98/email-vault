@@ -35,30 +35,30 @@ struct MainView: View {
                     Button {
                         model.goHome()
                     } label: {
-                        Label("总览", systemImage: "house")
+                        Label(tr("总览"), systemImage: "house")
                     }
-                    .help("总览")
+                    .help(tr("总览"))
                     Menu {
-                        Button("导出备份…") { exportBackup() }
-                        Button("导出 CSV（明文）…") { model.showExportCSV = true }
-                        Button("修改主密码…") { model.showChangePassword = true }
+                        Button(tr("导出备份…")) { exportBackup() }
+                        Button(tr("导出 CSV（明文）…")) { model.showExportCSV = true }
+                        Button(tr("修改主密码…")) { model.showChangePassword = true }
                         if model.touchIDAvailable {
                             Divider()
-                            Toggle("使用 Touch ID 解锁", isOn: Binding(
+                            Toggle(tr("使用 Touch ID 解锁"), isOn: Binding(
                                 get: { model.touchIDEnabled },
                                 set: { $0 ? model.enableTouchID() : model.disableTouchID() }
                             ))
                         }
                     } label: {
-                        Label("更多", systemImage: "ellipsis.circle")
+                        Label(tr("更多"), systemImage: "ellipsis.circle")
                     }
-                    .help("更多")
+                    .help(tr("更多"))
                     Button {
                         model.lock()
                     } label: {
                         Label(L10n.lock, systemImage: "lock")
                     }
-                    .help("锁定（⌘L）")
+                    .help(tr("锁定（⌘L）"))
                 }
             }
         }
@@ -84,7 +84,7 @@ struct MainView: View {
             try model.exportBackup(to: url)
         } catch {
             model.errorMessage = error.localizedDescription
-            model.showToast("导出失败")
+            model.showToast(tr("导出失败"))
         }
     }
 }
@@ -127,7 +127,7 @@ struct SidebarView: View {
             .padding(8)
 
             if grouped.isEmpty {
-                Text(model.trimmedQuery.isEmpty ? "还没有邮箱" : "没有匹配的邮箱")
+                Text(model.trimmedQuery.isEmpty ? tr("还没有邮箱") : tr("没有匹配的邮箱"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding()

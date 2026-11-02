@@ -16,8 +16,8 @@ struct EmailVaultApp: App {
         }
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("关于 Email Vault") { AppInfo.showAbout() }
-                Button("检查更新…") { AppInfo.checkForUpdates() }
+                Button(tr("关于 Email Vault")) { AppInfo.showAbout() }
+                Button(tr("检查更新…")) { AppInfo.checkForUpdates() }
             }
             CommandGroup(replacing: .newItem) {
                 Button(L10n.newEmail) {
@@ -30,17 +30,17 @@ struct EmailVaultApp: App {
                 }
                 .keyboardShortcut("n", modifiers: .command)
             }
-            CommandMenu("保险箱") {
+            CommandMenu(tr("保险箱")) {
                 Button(L10n.lock) {
                     appModel.lock()
                 }
                 .keyboardShortcut("l", modifiers: .command)
                 .disabled(!appModel.isUnlocked)
-                Button("修改主密码…") {
+                Button(tr("修改主密码…")) {
                     appModel.showChangePassword = true
                 }
                 .disabled(!appModel.isUnlocked)
-                Button("聚焦搜索") {
+                Button(tr("聚焦搜索")) {
                     appModel.focusSearch = true
                 }
                 .keyboardShortcut("f", modifiers: .command)

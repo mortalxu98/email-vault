@@ -27,7 +27,7 @@ struct PasswordFieldRow: View {
                     Image(systemName: visible ? "eye.slash" : "eye")
                 }
                 .buttonStyle(.borderless)
-                .help(visible ? "隐藏" : "显示")
+                .help(visible ? tr("隐藏") : tr("显示"))
                 Button {
                     password = PasswordGenerator.generate()
                     visible = true
@@ -35,7 +35,7 @@ struct PasswordFieldRow: View {
                     Image(systemName: "dice")
                 }
                 .buttonStyle(.borderless)
-                .help("生成随机密码")
+                .help(tr("生成随机密码"))
             }
         }
     }
@@ -84,17 +84,17 @@ struct EmailEditorSheet: View {
         VStack(spacing: 0) {
             Form {
                 Section {
-                    TextField("邮箱地址", text: $address, prompt: Text("name@example.com"))
+                    TextField(tr("邮箱地址"), text: $address, prompt: Text("name@example.com"))
                     PasswordFieldRow(
                         label: L10n.emailPassword,
                         placeholder: email == nil ? L10n.optionalPassword : L10n.leaveBlankKeep,
                         password: $password
                     )
                 } header: {
-                    Text(email == nil ? L10n.newEmail : "编辑邮箱")
+                    Text(email == nil ? L10n.newEmail : tr("编辑邮箱"))
                 }
                 Section {
-                    TextField("备注", text: $note, prompt: Text("可选"), axis: .vertical)
+                    TextField(tr("备注"), text: $note, prompt: Text(tr("可选")), axis: .vertical)
                         .lineLimit(1...4)
                 } footer: {
                     Text(L10n.notePlaintext).font(.caption).foregroundStyle(.secondary)
@@ -127,7 +127,7 @@ struct EmailEditorSheet: View {
         let address = address.trimmingCharacters(in: .whitespacesAndNewlines)
         let note = note.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !address.isEmpty else {
-            error = "邮箱地址不能为空"
+            error = tr("邮箱地址不能为空")
             return
         }
         do {
@@ -186,17 +186,17 @@ struct AccountEditorSheet: View {
                     if !suggestions.isEmpty {
                         suggestionList
                     }
-                    Picker("分类", selection: $category) {
+                    Picker(tr("分类"), selection: $category) {
                         Text(L10n.category("ai")).tag("ai")
                         Text(L10n.category("social")).tag("social")
                         Text(L10n.category("crypto")).tag("crypto")
                         Text(L10n.category("other")).tag("other")
                     }
                 } header: {
-                    Text(account == nil ? L10n.newService : "编辑服务")
+                    Text(account == nil ? L10n.newService : tr("编辑服务"))
                 }
-                Section("登录信息") {
-                    TextField(L10n.username, text: $username, prompt: Text("可选"))
+                Section(tr("登录信息")) {
+                    TextField(L10n.username, text: $username, prompt: Text(tr("可选")))
                     PasswordFieldRow(
                         label: L10n.password,
                         placeholder: account == nil ? L10n.optionalPassword : L10n.leaveBlankKeep,
@@ -205,7 +205,7 @@ struct AccountEditorSheet: View {
                     TextField(L10n.url, text: $url, prompt: Text("https://"))
                 }
                 Section {
-                    TextField("备注", text: $note, prompt: Text("可选"), axis: .vertical)
+                    TextField(tr("备注"), text: $note, prompt: Text(tr("可选")), axis: .vertical)
                         .lineLimit(1...3)
                 } footer: {
                     Text(L10n.notePlaintext).font(.caption).foregroundStyle(.secondary)
@@ -253,7 +253,7 @@ struct AccountEditorSheet: View {
     }
 
     private var platformField: some View {
-        TextField("平台名称", text: $platform, prompt: Text("输入会自动补全"))
+        TextField(tr("平台名称"), text: $platform, prompt: Text(tr("输入会自动补全")))
             .onChange(of: platform) { _, new in
                 suggestions = PlatformCatalog.matches(query: new, in: catalog)
                     .filter { $0.name != new }
@@ -338,7 +338,7 @@ struct AccountEditorSheet: View {
         let url = URLNormalizer.normalize(url)
         let note = note.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !platform.isEmpty else {
-            error = "平台名称不能为空"
+            error = tr("平台名称不能为空")
             return
         }
         let renewal: Renewal? = renewOn
@@ -383,7 +383,7 @@ struct SearchResultsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if !model.emails.isEmpty {
-                    Text("匹配的邮箱（\(model.emails.count)）")
+                    Text(trf("匹配的邮箱（%ld）", model.emails.count))
                         .font(.headline)
                     ForEach(model.emails) { email in
                         Button {
@@ -412,11 +412,11 @@ struct SearchResultsView: View {
                 }
 
                 HStack {
-                    Text("搜索「\(model.searchQuery)」：\(model.searchAccounts.count) 个服务")
+                    Text(trf("搜索「%@」：%ld 个服务", model.searchQuery, model.searchAccounts.count))
                         .font(.headline)
                     Spacer()
                     if !model.searchAccounts.isEmpty {
-                        Picker("视图", selection: Binding(
+                        Picker(tr("视图"), selection: Binding(
                             get: { model.accountViewMode },
                             set: { model.setViewMode($0) }
                         )) {

@@ -9,7 +9,7 @@ struct OverviewView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Text("总览").font(.largeTitle.bold())
+                Text(tr("总览")).font(.largeTitle.bold())
                 statsRow
                 renewalsSection
                 recentSection
@@ -26,7 +26,7 @@ struct OverviewView: View {
             StatCard(title: L10n.emails, value: s?.emails ?? 0, color: .accentColor)
             StatCard(title: L10n.services, value: s?.accounts ?? 0, color: .teal)
             StatCard(title: L10n.noPassword, value: s?.withoutPassword ?? 0, color: .secondary)
-            StatCard(title: "续费项", value: model.allRenewals.count, color: .orange)
+            StatCard(title: tr("续费项"), value: model.allRenewals.count, color: .orange)
             ForEach(["ai", "social", "crypto", "other"], id: \.self) { cat in
                 if let n = s?.byCategory[cat], n > 0 {
                     StatCard(title: L10n.category(cat), value: n, color: categoryColor(cat))
@@ -36,9 +36,9 @@ struct OverviewView: View {
     }
 
     private var renewalsSection: some View {
-        OverviewSection(title: "续费", systemImage: "calendar.badge.clock") {
+        OverviewSection(title: tr("续费"), systemImage: "calendar.badge.clock") {
             if model.allRenewals.isEmpty {
-                Text("还没有续费项。编辑服务时打开「续费提醒」即可。")
+                Text(tr("还没有续费项。编辑服务时打开「续费提醒」即可。"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(12)
@@ -56,7 +56,7 @@ struct OverviewView: View {
     }
 
     private var recentSection: some View {
-        OverviewSection(title: "最近修改", systemImage: "clock.arrow.circlepath") {
+        OverviewSection(title: tr("最近修改"), systemImage: "clock.arrow.circlepath") {
             ForEach(model.recentAccounts) { account in
                 OverviewRow(account: account) {
                     Text(L10n.category(account.category))

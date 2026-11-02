@@ -36,7 +36,7 @@ swift test
 - Swift：沿用现有风格，4 空格缩进；Core 层保持平台无关（`EmailVaultCore` 需能在 Linux 编译）。
 - Shell：`#!/usr/bin/env bash` + `set -euo pipefail`，变量加引号，能通过 shellcheck；破坏性操作支持 `--dry-run`。
 - 代码、注释、提交信息用英文；面向用户的文档可以用中文。
-- 新增界面文字要同时提供中文和英文。
+- 界面文字用 `tr("中文原文")` / `trf("含 %@ 或 %ld 的格式", …)`，并在 `email-swift/Localization/en.lproj/Localizable.strings` 添加英文翻译；`scripts/check-l10n.py`（CI 会跑）检查是否遗漏。
 
 ## 提交与 PR
 

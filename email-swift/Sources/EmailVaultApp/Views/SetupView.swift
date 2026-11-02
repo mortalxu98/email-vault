@@ -15,9 +15,9 @@ struct SetupView: View {
                 .accessibilityHidden(true)
             Text("Email Vault")
                 .font(.largeTitle.bold())
-            Text("设置主密码")
+            Text(tr("设置主密码"))
                 .font(.title2)
-            Text("至少 8 个字符。遗忘后无法恢复加密数据。")
+            Text(tr("至少 8 个字符。遗忘后无法恢复加密数据。"))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 420)
@@ -31,7 +31,7 @@ struct SetupView: View {
             if let err = model.errorMessage {
                 Text(err).foregroundStyle(.red)
             }
-            Button(model.isBusy ? "创建中…" : L10n.createVault) {
+            Button(model.isBusy ? tr("创建中…") : L10n.createVault) {
                 Task { await create() }
             }
             .keyboardShortcut(.defaultAction)

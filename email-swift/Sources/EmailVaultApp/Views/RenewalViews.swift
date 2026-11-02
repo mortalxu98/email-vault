@@ -24,7 +24,7 @@ struct RenewalBadge: View {
         .font(.caption)
         .foregroundStyle(color(days))
         .lineLimit(1)
-        .help("到期日 \(renewal.dueDate)，\(L10n.renewalCycle(renewal.cycle))，提前 \(renewal.leadDays) 天提醒")
+        .help(trf("到期日 %@，%@，提前 %ld 天提醒", renewal.dueDate, L10n.renewalCycle(renewal.cycle), renewal.leadDays))
     }
 
     private func color(_ days: Int?) -> Color {
@@ -47,7 +47,7 @@ struct RenewalBanner: View {
             } label: {
                 HStack {
                     Image(systemName: "bell.badge.fill").foregroundStyle(.orange)
-                    Text("续费提醒（\(model.dueRenewals.count)）").font(.headline)
+                    Text(trf("续费提醒（%ld）", model.dueRenewals.count)).font(.headline)
                     Spacer()
                     Image(systemName: expanded ? "chevron.up" : "chevron.down")
                         .foregroundStyle(.secondary)
@@ -90,16 +90,16 @@ struct RenewalBanner: View {
             .frame(minWidth: 140, alignment: .leading)
             RenewalBadge(renewal: renewal)
             Spacer()
-            Button("查看") {
+            Button(tr("查看")) {
                 model.searchQuery = ""
                 model.selectEmail(account.emailId)
             }
-            Button(renewal.cycle == .once ? "已处理" : "已续费") {
+            Button(renewal.cycle == .once ? tr("已处理") : tr("已续费")) {
                 model.markRenewed(account)
             }
             .buttonStyle(.borderedProminent)
             .tint(.orange)
-            .help(renewal.cycle == .once ? "移除这条提醒" : "到期日顺延一个周期")
+            .help(renewal.cycle == .once ? tr("移除这条提醒") : tr("到期日顺延一个周期"))
         }
     }
 }
@@ -113,17 +113,17 @@ struct RenewalEditorSection: View {
     @Binding var leadDays: Int
 
     var body: some View {
-        Toggle("续费提醒", isOn: $enabled)
+        Toggle(tr("续费提醒"), isOn: $enabled)
         if enabled {
-            DatePicker("到期日", selection: $dueDate, displayedComponents: .date)
-            Picker("周期", selection: $cycle) {
+            DatePicker(tr("到期日"), selection: $dueDate, displayedComponents: .date)
+            Picker(tr("周期"), selection: $cycle) {
                 ForEach(RenewalCycle.allCases, id: \.self) { c in
                     Text(L10n.renewalCycle(c)).tag(c)
                 }
             }
             .pickerStyle(.segmented)
-            TextField("金额", text: $amount, prompt: Text("可选，如 ¥99"))
-            Stepper("提前 \(leadDays) 天提醒", value: $leadDays, in: 0...90)
+            TextField(tr("金额"), text: $amount, prompt: Text(tr("可选，如 ¥99")))
+            Stepper(trf("提前 %ld 天提醒", leadDays), value: $leadDays, in: 0...90)
         }
     }
 }

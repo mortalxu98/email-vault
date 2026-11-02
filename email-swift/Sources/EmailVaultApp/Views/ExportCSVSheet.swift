@@ -17,18 +17,18 @@ struct ExportCSVSheet: View {
             Form {
                 Section {
                     Label {
-                        Text("导出的 CSV 包含**所有密码和安全备注的明文**。任何能读到这个文件的人或程序都能看到它们。请只在迁移数据时使用，用完立即删除，不要放进云盘或发给别人。")
+                        Text(LocalizedStringKey(tr("导出的 CSV 包含**所有密码和安全备注的明文**。任何能读到这个文件的人或程序都能看到它们。请只在迁移数据时使用，用完立即删除，不要放进云盘或发给别人。")))
                     } icon: {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                     }
                 } header: {
-                    Text("导出 CSV（明文）")
+                    Text(tr("导出 CSV（明文）"))
                 }
                 Section {
                     RevealableSecureField(L10n.masterPassword, text: $password)
                         .onSubmit { Task { await submit() } }
                 } footer: {
-                    Text("需要再次输入主密码确认。日常备份请用「导出备份」，备份文件里的密码保持加密。")
+                    Text(tr("需要再次输入主密码确认。日常备份请用「导出备份」，备份文件里的密码保持加密。"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -47,7 +47,7 @@ struct ExportCSVSheet: View {
                 Button(L10n.cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                     .disabled(working)
-                Button(working ? "验证中…" : "导出…") { Task { await submit() } }
+                Button(working ? tr("验证中…") : tr("导出…")) { Task { await submit() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(working || password.isEmpty)
             }
@@ -75,7 +75,7 @@ struct ExportCSVSheet: View {
             try model.exportCSV(to: url)
             dismiss()
         } catch {
-            self.error = "导出失败：\(error.localizedDescription)"
+            self.error = trf("导出失败：%@", error.localizedDescription)
         }
     }
 }

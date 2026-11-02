@@ -156,7 +156,7 @@ final class AppModel: ObservableObject {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             errorMessage = L10n.wrongPassword
         } catch {
-            errorMessage = "解锁失败：\(error)"
+            errorMessage = trf("解锁失败：%@", "\(error)")
         }
     }
 
@@ -309,7 +309,7 @@ final class AppModel: ObservableObject {
         touch()
         guard new.count >= 8 else { return L10n.passwordTooShort }
         guard new == confirm else { return L10n.passwordMismatch }
-        guard new != current else { return "新密码不能与当前密码相同。" }
+        guard new != current else { return tr("新密码不能与当前密码相同。") }
         isBusy = true
         defer { isBusy = false }
         do {
@@ -322,13 +322,13 @@ final class AppModel: ObservableObject {
             passwordEnteredAt = Date()
             refreshTouchIDRecord(key: k)
             touch()
-            showToast("主密码已修改")
+            showToast(tr("主密码已修改"))
             return nil
         } catch VaultError.invalidMasterPassword {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
-            return "当前主密码错误。"
+            return tr("当前主密码错误。")
         } catch {
-            return "修改失败，数据未改动：\(error)"
+            return trf("修改失败，数据未改动：%@", "\(error)")
         }
     }
 
@@ -355,10 +355,10 @@ final class AppModel: ObservableObject {
             let record = try BiometricStore.seal(key: key, vaultID: vaultID, passwordAt: passwordEnteredAt ?? Date())
             try biometric.save(record)
             touchIDEnabled = true
-            showToast("已开启 Touch ID 解锁")
+            showToast(tr("已开启 Touch ID 解锁"))
         } catch {
-            errorMessage = "开启 Touch ID 失败：\(error.localizedDescription)"
-            showToast("开启 Touch ID 失败")
+            errorMessage = trf("开启 Touch ID 失败：%@", error.localizedDescription)
+            showToast(tr("开启 Touch ID 失败"))
         }
     }
 
@@ -382,32 +382,32 @@ final class AppModel: ObservableObject {
         }
         guard record.vaultID == currentVaultID() else {
             disableTouchID()
-            errorMessage = "主密码已变更，Touch ID 已关闭。请用主密码解锁后重新开启。"
+            errorMessage = tr("主密码已变更，Touch ID 已关闭。请用主密码解锁后重新开启。")
             return
         }
         guard !BiometricStore.passwordExpired(record) else {
-            errorMessage = "已超过 14 天未输入主密码，请输入一次主密码。"
+            errorMessage = tr("已超过 14 天未输入主密码，请输入一次主密码。")
             return
         }
         let context = LAContext()
-        context.localizedFallbackTitle = "输入主密码"
+        context.localizedFallbackTitle = tr("输入主密码")
         do {
-            try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: "解锁 Email Vault")
+            try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: tr("解锁 Email Vault"))
         } catch let error as LAError {
             switch error.code {
             case .userCancel, .userFallback, .systemCancel, .appCancel:
                 break
             default:
-                errorMessage = "Touch ID 不可用：\(error.localizedDescription)"
+                errorMessage = trf("Touch ID 不可用：%@", error.localizedDescription)
             }
             return
         } catch {
-            errorMessage = "Touch ID 不可用：\(error.localizedDescription)"
+            errorMessage = trf("Touch ID 不可用：%@", error.localizedDescription)
             return
         }
         guard let k = try? BiometricStore.open(record, context: context), vault.verify(key: k) else {
             disableTouchID()
-            errorMessage = "Touch ID 凭据已失效（可能指纹有变动），已关闭。请用主密码解锁后重新开启。"
+            errorMessage = tr("Touch ID 凭据已失效（可能指纹有变动），已关闭。请用主密码解锁后重新开启。")
             return
         }
         passwordEnteredAt = record.passwordAt
@@ -421,7 +421,7 @@ final class AppModel: ObservableObject {
         let next = renewal.renewed()
         do {
             try store.setRenewal(accountId: account.id, renewal: next)
-            showToast(next.map { "已续费，下次到期 \($0.dueDate)" } ?? "已移除提醒")
+            showToast(next.map { trf("已续费，下次到期 %@", $0.dueDate) } ?? tr("已移除提醒"))
             refresh()
         } catch {
             errorMessage = error.localizedDescription
@@ -444,13 +444,13 @@ final class AppModel: ObservableObject {
         touch()
         guard let key else { throw VaultError.invalidMasterPassword }
         try CSVExporter.write(CSVExporter.export(store: store, key: key), to: url)
-        showToast("CSV 已导出，用完请删除")
+        showToast(tr("CSV 已导出，用完请删除"))
     }
 
     func exportBackup(to url: URL) throws {
         touch()
         try store.export(to: url)
-        showToast("备份已保存")
+        showToast(tr("备份已保存"))
     }
 }
 #endif
