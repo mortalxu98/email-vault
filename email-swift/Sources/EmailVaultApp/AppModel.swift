@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import Foundation
 import SwiftUI
 import Crypto
@@ -36,6 +37,7 @@ final class AppModel: ObservableObject {
     private var lastActivity = Date()
     private var idleTimer: Timer?
     private var toastWorkItem: DispatchWorkItem?
+    private var systemLockObservers: [(NotificationCenter, NSObjectProtocol)] = []
     let idleTimeout: TimeInterval = 10 * 60
 
     init() {
@@ -49,6 +51,29 @@ final class AppModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
             needsSetup = true
+        }
+        installSystemLockObservers()
+    }
+
+    /// Lock immediately on sleep, screen lock, screensaver, display sleep or user switch.
+    private func installSystemLockObservers() {
+        let workspace = NSWorkspace.shared.notificationCenter
+        let distributed = DistributedNotificationCenter.default()
+        let events: [(NotificationCenter, Notification.Name)] = [
+            (workspace, NSWorkspace.willSleepNotification),
+            (workspace, NSWorkspace.screensDidSleepNotification),
+            (workspace, NSWorkspace.sessionDidResignActiveNotification),
+            (distributed, Notification.Name("com.apple.screenIsLocked")),
+            (distributed, Notification.Name("com.apple.screensaver.didstart")),
+        ]
+        for (center, name) in events {
+            let token = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self, self.isUnlocked else { return }
+                    self.lock()
+                }
+            }
+            systemLockObservers.append((center, token))
         }
     }
 
