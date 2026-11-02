@@ -71,6 +71,9 @@ struct AccountCard: View {
             if !account.note.isEmpty {
                 Text(account.note).font(.caption).foregroundStyle(.secondary)
             }
+            if let renewal = account.renewal {
+                RenewalBadge(renewal: renewal)
+            }
         }
         .padding(12)
         .background(.background)
@@ -143,6 +146,9 @@ struct AccountListRow: View {
                     Text(L10n.category(account.category))
                         .font(.caption2)
                         .foregroundStyle(categoryColor(account.category))
+                    if let renewal = account.renewal {
+                        RenewalBadge(renewal: renewal, compact: true)
+                    }
                 }
             }
             .frame(minWidth: 140, maxWidth: 200, alignment: .leading)

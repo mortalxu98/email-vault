@@ -118,6 +118,11 @@ struct AccountEditorSheet: View {
     @State private var password = ""
     @State private var url = ""
     @State private var note = ""
+    @State private var renewOn = false
+    @State private var renewDate = Date()
+    @State private var renewCycle: RenewalCycle = .yearly
+    @State private var renewAmount = ""
+    @State private var renewLead = Renewal.defaultLeadDays
     @State private var suggestions: [PlatformCatalog.CatalogEntry] = []
     @State private var selectedIndex = 0
     @State private var autoURL = ""
@@ -179,6 +184,13 @@ struct AccountEditorSheet: View {
                 .textFieldStyle(.roundedBorder)
             TextField("备注", text: $note)
                 .textFieldStyle(.roundedBorder)
+            RenewalEditorSection(
+                enabled: $renewOn,
+                dueDate: $renewDate,
+                cycle: $renewCycle,
+                amount: $renewAmount,
+                leadDays: $renewLead
+            )
             if let error { Text(error).foregroundStyle(.red) }
             HStack {
                 Spacer()
@@ -187,7 +199,7 @@ struct AccountEditorSheet: View {
             }
         }
         .padding(24)
-        .frame(width: 480)
+        .frame(width: 520)
         .onAppear {
             if let account {
                 platform = account.platform
@@ -195,6 +207,13 @@ struct AccountEditorSheet: View {
                 username = account.username
                 url = account.url
                 note = account.note
+                if let r = account.renewal {
+                    renewOn = true
+                    renewDate = Renewal.parse(r.dueDate) ?? Date()
+                    renewCycle = r.cycle
+                    renewAmount = r.amount
+                    renewLead = r.leadDays
+                }
             }
         }
     }
@@ -258,18 +277,28 @@ struct AccountEditorSheet: View {
             error = "平台名称不能为空"
             return
         }
+        let renewal: Renewal? = renewOn
+            ? Renewal(
+                dueDate: Renewal.format(renewDate),
+                cycle: renewCycle,
+                amount: renewAmount.trimmingCharacters(in: .whitespacesAndNewlines),
+                leadDays: renewLead
+            )
+            : nil
         do {
             let enc: Data? = password.isEmpty ? nil : try VaultCrypto.encrypt(password, with: key)
             if let account {
                 try model.store.updateAccount(
                     id: account.id, platform: platform, category: category,
-                    username: username, url: url, note: note, passwordEnc: enc
+                    username: username, url: url, note: note, passwordEnc: enc,
+                    renewal: renewal
                 )
             } else {
                 _ = try model.store.createAccount(
                     emailId: emailId, platform: platform, category: category,
                     username: username, url: url, note: note,
-                    passwordEnc: password.isEmpty ? nil : enc
+                    passwordEnc: password.isEmpty ? nil : enc,
+                    renewal: renewal
                 )
             }
             model.refresh()

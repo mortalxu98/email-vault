@@ -1,5 +1,6 @@
 import XCTest
 import Crypto
+import GRDB
 @testable import EmailVaultCore
 
 final class StoreTests: XCTestCase {
@@ -58,14 +59,14 @@ final class StoreTests: XCTestCase {
         )
         try store.updateAccount(
             id: aid, platform: "Claude", category: "ai",
-            username: "", url: "", note: "", passwordEnc: nil
+            username: "", url: "", note: "", passwordEnc: nil, renewal: nil
         )
         XCTAssertEqual(try VaultCrypto.decrypt(try store.getAccountPassword(aid)!, with: key), "old")
 
         let newEnc = try VaultCrypto.encrypt("new", with: key)
         try store.updateAccount(
             id: aid, platform: "Claude", category: "ai",
-            username: "", url: "", note: "", passwordEnc: newEnc
+            username: "", url: "", note: "", passwordEnc: newEnc, renewal: nil
         )
         XCTAssertEqual(try VaultCrypto.decrypt(try store.getAccountPassword(aid)!, with: key), "new")
     }
@@ -122,5 +123,55 @@ final class StoreTests: XCTestCase {
         XCTAssertFalse(raw.contains(Data(secret.utf8)))
         // address stays searchable (may appear in sqlite pages)
         XCTAssertTrue(raw.contains(Data("a@gmail.com".utf8)))
+    }
+
+    func testRenewalRoundTripAndClear() throws {
+        let eid = try store.createEmail(address: "r@gmail.com", note: "", passwordEnc: nil)
+        let renewal = Renewal(dueDate: "2026-12-01", cycle: .yearly, amount: "¥99", leadDays: 10)
+        let aid = try store.createAccount(
+            emailId: eid, platform: "ZoroCloud", category: "other",
+            username: "", url: "", note: "", passwordEnc: nil, renewal: renewal
+        )
+        XCTAssertEqual(try store.getAccount(aid)?.renewal, renewal)
+        XCTAssertEqual(try store.listRenewals().map(\.id), [aid])
+
+        try store.setRenewal(accountId: aid, renewal: nil)
+        XCTAssertNil(try store.getAccount(aid)?.renewal)
+        XCTAssertTrue(try store.listRenewals().isEmpty)
+    }
+
+    func testMigrationAddsRenewalColumnsAndBacksUp() throws {
+        let dir = tmpDir.appendingPathComponent("old", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbPath = dir.appendingPathComponent("vault.db")
+        let legacy = try DatabaseQueue(path: dbPath.path)
+        try legacy.write { db in
+            try db.execute(sql: Store.schema)
+            try db.execute(sql: "INSERT INTO emails (address) VALUES ('old@gmail.com')")
+            try db.execute(sql: "INSERT INTO accounts (email_id, platform) VALUES (1, 'GitHub')")
+        }
+        try legacy.close()
+
+        let migrated = try Store(path: dbPath)
+        XCTAssertNil(try migrated.listAccounts(emailId: 1).first?.renewal)
+        let backups = try FileManager.default.contentsOfDirectory(atPath: dir.appendingPathComponent("backups").path)
+        XCTAssertEqual(backups.count, 1)
+
+        // Reopening must not migrate or back up again.
+        _ = try Store(path: dbPath)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: dir.appendingPathComponent("backups").path).count, 1)
+    }
+
+    func testRenewalDueAndAdvance() throws {
+        let today = try XCTUnwrap(Renewal.parse("2026-01-31"))
+        let r = Renewal(dueDate: "2026-02-05", cycle: .monthly, leadDays: 7)
+        XCTAssertEqual(r.daysUntilDue(today: today), 5)
+        XCTAssertTrue(r.isDue(today: today))
+        XCTAssertFalse(Renewal(dueDate: "2026-03-01", leadDays: 7).isDue(today: today))
+        XCTAssertEqual(Renewal(dueDate: "2026-01-20").daysUntilDue(today: today), -11)
+
+        XCTAssertEqual(Renewal(dueDate: "2026-01-31", cycle: .monthly).renewed()?.dueDate, "2026-02-28")
+        XCTAssertEqual(Renewal(dueDate: "2024-02-29", cycle: .yearly).renewed()?.dueDate, "2025-02-28")
+        XCTAssertNil(Renewal(dueDate: "2026-01-31", cycle: .once).renewed())
     }
 }

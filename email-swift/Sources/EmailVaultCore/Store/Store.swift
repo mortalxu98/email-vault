@@ -34,6 +34,14 @@ public final class Store: @unchecked Sendable {
     CREATE INDEX IF NOT EXISTS idx_accounts_email_id ON accounts(email_id);
     """
 
+    /// Columns added after the original schema. Additive only, so older builds can still open the DB.
+    static let addedAccountColumns: [(name: String, ddl: String)] = [
+        ("renew_at", "ALTER TABLE accounts ADD COLUMN renew_at TEXT"),
+        ("renew_cycle", "ALTER TABLE accounts ADD COLUMN renew_cycle TEXT NOT NULL DEFAULT ''"),
+        ("renew_amount", "ALTER TABLE accounts ADD COLUMN renew_amount TEXT NOT NULL DEFAULT ''"),
+        ("renew_lead_days", "ALTER TABLE accounts ADD COLUMN renew_lead_days INTEGER NOT NULL DEFAULT 7"),
+    ]
+
     /// Resolve DB path: `EMAIL_VAULT_DB` env wins; otherwise `~/.local/share/email-vault/vault.db`.
     public static func defaultPath() -> URL {
         if let override = ProcessInfo.processInfo.environment["EMAIL_VAULT_DB"], !override.isEmpty {
@@ -61,6 +69,33 @@ public final class Store: @unchecked Sendable {
             [.posixPermissions: 0o600],
             ofItemAtPath: resolved.path
         )
+        try migrate()
+    }
+
+    /// Add missing columns. Backs up a non-empty DB to `<db dir>/backups/` first.
+    private func migrate() throws {
+        let missing = try dbQueue.read { db -> [(name: String, ddl: String)] in
+            let existing = Set(try db.columns(in: "accounts").map(\.name))
+            return Store.addedAccountColumns.filter { !existing.contains($0.name) }
+        }
+        guard !missing.isEmpty else { return }
+        let hasData = try dbQueue.read { db in
+            (try Int.fetchOne(db, sql: "SELECT (SELECT COUNT(*) FROM emails) + (SELECT COUNT(*) FROM meta)") ?? 0) > 0
+        }
+        if hasData {
+            let dir = path.deletingLastPathComponent().appendingPathComponent("backups", isDirectory: true)
+            try FileManager.default.createDirectory(
+                at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700]
+            )
+            let stamp = Renewal.format(Date()) + "-" + String(Int(Date().timeIntervalSince1970))
+            let name = path.deletingPathExtension().lastPathComponent
+            try export(to: dir.appendingPathComponent("\(name)-pre-migration-\(stamp).db"))
+        }
+        try dbQueue.write { db in
+            for column in missing {
+                try db.execute(sql: column.ddl)
+            }
+        }
     }
 
     // MARK: - LIKE escape (matches Python `_like`)
@@ -104,7 +139,8 @@ public final class Store: @unchecked Sendable {
 
     private static let accountColumns = """
         a.id, a.email_id, e.address AS email_address, a.platform, a.category,
-        a.username, a.password_enc IS NOT NULL AS has_password, a.url, a.note
+        a.username, a.password_enc IS NOT NULL AS has_password, a.url, a.note,
+        a.renew_at, a.renew_cycle, a.renew_amount, a.renew_lead_days
     """
 
     public func listEmails(query: String = "") throws -> [EmailRecord] {
@@ -283,17 +319,21 @@ public final class Store: @unchecked Sendable {
         username: String,
         url: String,
         note: String,
-        passwordEnc: Data?
+        passwordEnc: Data?,
+        renewal: Renewal? = nil
     ) throws -> Int64 {
+        let r = Self.renewalArguments(renewal)
         do {
             return try dbQueue.write { db in
                 try db.execute(
                     sql: """
                     INSERT INTO accounts
-                       (email_id, platform, category, username, url, note, password_enc)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                       (email_id, platform, category, username, url, note, password_enc,
+                        renew_at, renew_cycle, renew_amount, renew_lead_days)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     arguments: [emailId, platform, category, username, url, note, passwordEnc]
+                        + r
                 )
                 return db.lastInsertedRowID
             }
@@ -302,7 +342,7 @@ public final class Store: @unchecked Sendable {
         }
     }
 
-    /// `passwordEnc == nil` keeps the stored password.
+    /// `passwordEnc == nil` keeps the stored password; `renewal == nil` clears the reminder.
     public func updateAccount(
         id: Int64,
         platform: String,
@@ -310,22 +350,58 @@ public final class Store: @unchecked Sendable {
         username: String,
         url: String,
         note: String,
-        passwordEnc: Data?
+        passwordEnc: Data?,
+        renewal: Renewal?
     ) throws {
+        let r = Self.renewalArguments(renewal)
         let changed = try dbQueue.write { db -> Int in
             try db.execute(
                 sql: """
                 UPDATE accounts
                    SET platform = ?, category = ?, username = ?, url = ?, note = ?,
                        password_enc = COALESCE(?, password_enc),
+                       renew_at = ?, renew_cycle = ?, renew_amount = ?, renew_lead_days = ?,
                        updated_at = datetime('now')
                  WHERE id = ?
                 """,
-                arguments: [platform, category, username, url, note, passwordEnc, id]
+                arguments: [platform, category, username, url, note, passwordEnc] + r + [id]
             )
             return db.changesCount
         }
         if changed == 0 { throw StoreError.notFound(id) }
+    }
+
+    /// Accounts that have a renewal reminder, earliest due first.
+    public func listRenewals() throws -> [AccountRecord] {
+        try dbQueue.read { db in
+            try Row.fetchAll(
+                db,
+                sql: """
+                SELECT \(Self.accountColumns)
+                  FROM accounts a JOIN emails e ON e.id = a.email_id
+                 WHERE a.renew_at IS NOT NULL
+                 ORDER BY a.renew_at, a.platform COLLATE NOCASE
+                """
+            ).map(Self.mapAccount)
+        }
+    }
+
+    /// Set or clear only the renewal fields of an account.
+    public func setRenewal(accountId: Int64, renewal: Renewal?) throws {
+        let r = Self.renewalArguments(renewal)
+        let changed = try dbQueue.write { db -> Int in
+            try db.execute(
+                sql: """
+                UPDATE accounts
+                   SET renew_at = ?, renew_cycle = ?, renew_amount = ?, renew_lead_days = ?,
+                       updated_at = datetime('now')
+                 WHERE id = ?
+                """,
+                arguments: r + [accountId]
+            )
+            return db.changesCount
+        }
+        if changed == 0 { throw StoreError.notFound(accountId) }
     }
 
     public func deleteAccount(_ accountId: Int64) throws {
@@ -387,7 +463,24 @@ public final class Store: @unchecked Sendable {
             username: row["username"],
             hasPassword: (row["has_password"] as Int64) != 0,
             url: row["url"],
-            note: row["note"]
+            note: row["note"],
+            renewal: mapRenewal(row)
         )
+    }
+
+    private static func mapRenewal(_ row: Row) -> Renewal? {
+        guard let due = row["renew_at"] as String?, !due.isEmpty else { return nil }
+        let cycle = RenewalCycle(rawValue: row["renew_cycle"] as String? ?? "") ?? .once
+        return Renewal(
+            dueDate: due,
+            cycle: cycle,
+            amount: row["renew_amount"] as String? ?? "",
+            leadDays: row["renew_lead_days"] as Int? ?? Renewal.defaultLeadDays
+        )
+    }
+
+    private static func renewalArguments(_ renewal: Renewal?) -> StatementArguments {
+        guard let renewal else { return [nil, "", "", Renewal.defaultLeadDays] }
+        return [renewal.dueDate, renewal.cycle.rawValue, renewal.amount, renewal.leadDays]
     }
 }

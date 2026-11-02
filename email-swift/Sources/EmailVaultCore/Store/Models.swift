@@ -40,6 +40,7 @@ public struct AccountRecord: Identifiable, Equatable, Sendable {
     public var hasPassword: Bool
     public var url: String
     public var note: String
+    public var renewal: Renewal?
 
     public init(
         id: Int64,
@@ -50,7 +51,8 @@ public struct AccountRecord: Identifiable, Equatable, Sendable {
         username: String,
         hasPassword: Bool,
         url: String,
-        note: String
+        note: String,
+        renewal: Renewal? = nil
     ) {
         self.id = id
         self.emailId = emailId
@@ -61,6 +63,7 @@ public struct AccountRecord: Identifiable, Equatable, Sendable {
         self.hasPassword = hasPassword
         self.url = url
         self.note = note
+        self.renewal = renewal
     }
 }
 

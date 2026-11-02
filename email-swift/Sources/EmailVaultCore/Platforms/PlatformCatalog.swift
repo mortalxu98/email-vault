@@ -117,6 +117,7 @@ public enum PlatformCatalog {
         // other
         Platform(name: "Slack", category: "other", domains: ["slack.com"], logo: "slack"),
         Platform(name: "GitHub", category: "other", domains: ["github.com"], logo: "github"),
+        Platform(name: "ZoroCloud", category: "other", domains: ["zorocloud.com"], aliases: ["zoro"]),
         Platform(name: "Spotify", category: "other", domains: ["spotify.com"], logo: "spotify"),
         Platform(name: "Apple", category: "other", domains: ["apple.com", "icloud.com"], aliases: ["appleid", "appleaccount", "苹果", "苹果账号", "appstore", "苹果商店", "icloud"], logo: "apple"),
         Platform(name: "Google", category: "other", domains: ["accounts.google.com", "google.com"], aliases: ["googleaccount", "google账号", "谷歌", "谷歌账号"], logo: "google"),

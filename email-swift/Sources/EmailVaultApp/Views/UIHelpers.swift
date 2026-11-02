@@ -57,6 +57,23 @@ enum L10n {
     static let passwordTooShort = "密码至少 8 个字符。"
     static let passwordMismatch = "两次输入的密码不一致。"
     static let duplicateEmail = "该邮箱地址已存在。"
+
+    static func renewalCycle(_ cycle: RenewalCycle) -> String {
+        switch cycle {
+        case .once: return "一次性"
+        case .monthly: return "每月"
+        case .yearly: return "每年"
+        }
+    }
+
+    static func renewalDue(_ days: Int) -> String {
+        switch days {
+        case ..<0: return "已过期 \(-days) 天"
+        case 0: return "今天到期"
+        case 1: return "明天到期"
+        default: return "\(days) 天后到期"
+        }
+    }
 }
 
 /// Strip https:// / http:// and trailing slashes for compact display.

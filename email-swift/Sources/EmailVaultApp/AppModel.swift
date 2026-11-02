@@ -14,6 +14,8 @@ final class AppModel: ObservableObject {
     @Published var emails: [EmailRecord] = []
     @Published var accounts: [AccountRecord] = []
     @Published var searchAccounts: [AccountRecord] = []
+    /// Accounts whose renewal is within its reminder window or overdue.
+    @Published var dueRenewals: [AccountRecord] = []
     @Published var stats: Stats?
     @Published var errorMessage: String?
     @Published var toastMessage: String?
@@ -131,6 +133,7 @@ final class AppModel: ObservableObject {
         emails = []
         accounts = []
         searchAccounts = []
+        dueRenewals = []
         stats = nil
         selectedEmailId = nil
         selectedEmail = nil
@@ -157,6 +160,8 @@ final class AppModel: ObservableObject {
             let query = trimmedQuery
             emails = try store.listEmails(query: query)
             stats = try store.stats()
+            let now = Date()
+            dueRenewals = try store.listRenewals().filter { $0.renewal?.isDue(today: now) == true }
             if !query.isEmpty {
                 searchAccounts = try store.searchAccounts(query: query)
             } else {
@@ -216,6 +221,20 @@ final class AppModel: ObservableObject {
     func setViewMode(_ mode: AccountViewMode) {
         accountViewMode = mode
         UserDefaults.standard.set(mode.rawValue, forKey: "email-vault:view")
+    }
+
+    /// Roll the due date forward one cycle, or drop a one-off reminder.
+    func markRenewed(_ account: AccountRecord) {
+        touch()
+        guard let renewal = account.renewal else { return }
+        let next = renewal.renewed()
+        do {
+            try store.setRenewal(accountId: account.id, renewal: next)
+            showToast(next.map { "已续费，下次到期 \($0.dueDate)" } ?? "已移除提醒")
+            refresh()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func exportBackup(to url: URL) throws {

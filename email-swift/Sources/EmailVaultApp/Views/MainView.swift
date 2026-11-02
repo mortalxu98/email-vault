@@ -11,18 +11,23 @@ struct MainView: View {
             SidebarView()
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
         } detail: {
-            if let email = model.selectedEmail {
-                EmailDetailView(email: email)
-            } else if !model.trimmedQuery.isEmpty {
-                SearchResultsView()
-            } else {
-                EmptyStateView(
-                    systemImage: "envelope.fill",
-                    title: L10n.welcomeTitle,
-                    subtitle: L10n.welcomeBody,
-                    big: true
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 0) {
+                if !model.dueRenewals.isEmpty {
+                    RenewalBanner()
+                }
+                if let email = model.selectedEmail {
+                    EmailDetailView(email: email)
+                } else if !model.trimmedQuery.isEmpty {
+                    SearchResultsView()
+                } else {
+                    EmptyStateView(
+                        systemImage: "envelope.fill",
+                        title: L10n.welcomeTitle,
+                        subtitle: L10n.welcomeBody,
+                        big: true
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
         }
         .onAppear { model.refresh() }
