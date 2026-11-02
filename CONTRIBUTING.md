@@ -10,7 +10,8 @@
 
 ## 开发环境
 
-- macOS 14+，Swift 5.9+；完整 Xcode 才能跑 `swift test`（只编译用 Command Line Tools 即可）
+- macOS 14+，Swift 5.9+；`swift test` 需要完整 Xcode（只编译用 Command Line Tools 即可）。如果 `xcode-select` 指向 Command Line Tools，可临时指定：
+  `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`
 - 改图标需要 `rsvg-convert`（`brew install librsvg`）
 
 ```bash

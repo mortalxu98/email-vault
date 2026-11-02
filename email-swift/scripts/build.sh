@@ -53,7 +53,6 @@ echo "==> Resolving Swift packages"
 run swift package resolve
 
 BUILT=""
-CONFIG_LOWER=$(echo "$CONFIGURATION" | tr '[:upper:]' '[:lower:]')
 
 if xcodebuild -version >/dev/null 2>&1; then
   echo "==> xcodebuild ($CONFIGURATION) via Swift Package"

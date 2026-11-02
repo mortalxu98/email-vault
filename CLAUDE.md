@@ -11,4 +11,4 @@ Local-only password vault: email ↔ platform accounts. Native macOS SwiftUI app
 Rules:
 - Never log or persist plaintext passwords.
 - Never touch the real DB (`~/.local/share/email-vault/vault.db`); use a temp `EMAIL_VAULT_DB` for manual tests.
-- Before committing: `cd email-swift && swift build` (`swift test` needs full Xcode/XCTest, not available here).
+- Before committing: `cd email-swift && swift build`; run tests with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --scratch-path .build/xcode` (the default Command Line Tools lack XCTest).
