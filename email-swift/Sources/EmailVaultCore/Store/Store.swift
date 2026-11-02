@@ -409,6 +409,22 @@ public final class Store: @unchecked Sendable {
         if changed == 0 { throw StoreError.notFound(id) }
     }
 
+    /// Most recently created or edited accounts.
+    public func recentAccounts(limit: Int) throws -> [AccountRecord] {
+        try dbQueue.read { db in
+            try Row.fetchAll(
+                db,
+                sql: """
+                SELECT \(Self.accountColumns)
+                  FROM accounts a JOIN emails e ON e.id = a.email_id
+                 ORDER BY a.updated_at DESC, a.id DESC
+                 LIMIT ?
+                """,
+                arguments: [limit]
+            ).map(Self.mapAccount)
+        }
+    }
+
     /// Accounts that have a renewal reminder, earliest due first.
     public func listRenewals() throws -> [AccountRecord] {
         try dbQueue.read { db in

@@ -104,7 +104,7 @@ struct RenewalBanner: View {
     }
 }
 
-/// Renewal fields inside the account editor.
+/// Renewal rows inside the account editor's Form.
 struct RenewalEditorSection: View {
     @Binding var enabled: Bool
     @Binding var dueDate: Date
@@ -113,31 +113,18 @@ struct RenewalEditorSection: View {
     @Binding var leadDays: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Toggle("续费提醒", isOn: $enabled)
-            if enabled {
-                HStack(spacing: 12) {
-                    DatePicker("到期日", selection: $dueDate, displayedComponents: .date)
-                        .datePickerStyle(.field)
-                    Picker("周期", selection: $cycle) {
-                        ForEach(RenewalCycle.allCases, id: \.self) { c in
-                            Text(L10n.renewalCycle(c)).tag(c)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 180)
-                }
-                HStack(spacing: 12) {
-                    TextField("金额（可选，如 ¥99）", text: $amount)
-                        .textFieldStyle(.roundedBorder)
-                    Stepper("提前 \(leadDays) 天提醒", value: $leadDays, in: 0...90)
-                        .fixedSize()
+        Toggle("续费提醒", isOn: $enabled)
+        if enabled {
+            DatePicker("到期日", selection: $dueDate, displayedComponents: .date)
+            Picker("周期", selection: $cycle) {
+                ForEach(RenewalCycle.allCases, id: \.self) { c in
+                    Text(L10n.renewalCycle(c)).tag(c)
                 }
             }
+            .pickerStyle(.segmented)
+            TextField("金额", text: $amount, prompt: Text("可选，如 ¥99"))
+            Stepper("提前 \(leadDays) 天提醒", value: $leadDays, in: 0...90)
         }
-        .padding(10)
-        .background(.quaternary.opacity(0.35))
-        .cornerRadius(8)
     }
 }
 #endif

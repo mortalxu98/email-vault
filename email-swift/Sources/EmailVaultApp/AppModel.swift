@@ -17,6 +17,9 @@ final class AppModel: ObservableObject {
     @Published var searchAccounts: [AccountRecord] = []
     /// Accounts whose renewal is within its reminder window or overdue.
     @Published var dueRenewals: [AccountRecord] = []
+    /// Overview page data.
+    @Published var allRenewals: [AccountRecord] = []
+    @Published var recentAccounts: [AccountRecord] = []
     @Published var stats: Stats?
     @Published var errorMessage: String?
     @Published var toastMessage: String?
@@ -161,6 +164,8 @@ final class AppModel: ObservableObject {
         accounts = []
         searchAccounts = []
         dueRenewals = []
+        allRenewals = []
+        recentAccounts = []
         stats = nil
         selectedEmailId = nil
         selectedEmail = nil
@@ -188,7 +193,9 @@ final class AppModel: ObservableObject {
             emails = try store.listEmails(query: query)
             stats = try store.stats()
             let now = Date()
-            dueRenewals = try store.listRenewals().filter { $0.renewal?.isDue(today: now) == true }
+            allRenewals = try store.listRenewals()
+            dueRenewals = allRenewals.filter { $0.renewal?.isDue(today: now) == true }
+            recentAccounts = try store.recentAccounts(limit: 6)
             if !query.isEmpty {
                 searchAccounts = try store.searchAccounts(query: query)
             } else {
@@ -270,6 +277,11 @@ final class AppModel: ObservableObject {
     func platformCatalog() -> [PlatformCatalog.CatalogEntry] {
         let user = (try? store.distinctPlatforms()) ?? []
         return PlatformCatalog.catalog(userPlatforms: user.map { ($0.0, $0.1, $0.2) })
+    }
+
+    func goHome() {
+        searchQuery = ""
+        selectEmail(nil)
     }
 
     func setViewMode(_ mode: AccountViewMode) {

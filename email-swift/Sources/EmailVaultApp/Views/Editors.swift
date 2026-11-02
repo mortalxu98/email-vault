@@ -4,35 +4,66 @@ import Crypto
 import EmailVaultCore
 
 struct PasswordFieldRow: View {
+    let label: String
     let placeholder: String
     @Binding var password: String
     @State private var visible = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            Group {
-                if visible {
-                    TextField(placeholder, text: $password)
-                } else {
-                    SecureField(placeholder, text: $password)
+        LabeledContent(label) {
+            HStack(spacing: 6) {
+                Group {
+                    if visible {
+                        TextField(label, text: $password, prompt: Text(placeholder))
+                    } else {
+                        SecureField(label, text: $password, prompt: Text(placeholder))
+                    }
                 }
+                .labelsHidden()
+                .multilineTextAlignment(.trailing)
+                Button {
+                    visible.toggle()
+                } label: {
+                    Image(systemName: visible ? "eye.slash" : "eye")
+                }
+                .buttonStyle(.borderless)
+                .help(visible ? "隐藏" : "显示")
+                Button {
+                    password = PasswordGenerator.generate()
+                    visible = true
+                } label: {
+                    Image(systemName: "dice")
+                }
+                .buttonStyle(.borderless)
+                .help("生成随机密码")
             }
-            .textFieldStyle(.roundedBorder)
-            Button {
-                visible.toggle()
-            } label: {
-                Image(systemName: visible ? "eye.slash" : "eye")
+        }
+    }
+}
+
+/// Bottom bar shared by editor sheets: error on the left, actions on the right.
+struct SheetActions: View {
+    let error: String?
+    let onCancel: () -> Void
+    let onSave: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+        Divider()
+        HStack {
+            if let error {
+                Label(error, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .font(.callout)
             }
-            .buttonStyle(.borderless)
-            .help(visible ? "隐藏" : "显示")
-            Button {
-                password = PasswordGenerator.generate()
-                visible = true
-            } label: {
-                Image(systemName: "arrow.clockwise")
-            }
-            .buttonStyle(.borderless)
-            .help("生成随机密码")
+            Spacer()
+            Button(L10n.cancel, action: onCancel)
+                .keyboardShortcut(.cancelAction)
+            Button(L10n.save, action: onSave)
+                .keyboardShortcut(.defaultAction)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
         }
     }
 }
@@ -50,35 +81,38 @@ struct EmailEditorSheet: View {
     @State private var error: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(email == nil ? L10n.newEmail : "编辑邮箱").font(.headline)
-            TextField("邮箱地址", text: $address)
-                .textFieldStyle(.roundedBorder)
-            PasswordFieldRow(
-                placeholder: email == nil ? L10n.optionalPassword : L10n.leaveBlankKeep,
-                password: $password
-            )
-            TextField("备注", text: $note, axis: .vertical)
-                .lineLimit(2...4)
-                .textFieldStyle(.roundedBorder)
-            Text(L10n.notePlaintext)
-                .font(.caption2).foregroundStyle(.secondary)
-            Text(L10n.secureNote).font(.subheadline.weight(.medium))
-            SecureNoteEditor(
-                text: $secret,
-                loaded: $secretLoaded,
-                hasExisting: email?.hasSecret ?? false,
-                load: { try email.flatMap { try model.decryptEmailSecret($0.id) } }
-            )
-            if let error { Text(error).foregroundStyle(.red) }
-            HStack {
-                Spacer()
-                Button(L10n.cancel) { dismiss() }
-                Button(L10n.save) { save() }.keyboardShortcut(.defaultAction)
+        VStack(spacing: 0) {
+            Form {
+                Section {
+                    TextField("邮箱地址", text: $address, prompt: Text("name@example.com"))
+                    PasswordFieldRow(
+                        label: L10n.emailPassword,
+                        placeholder: email == nil ? L10n.optionalPassword : L10n.leaveBlankKeep,
+                        password: $password
+                    )
+                } header: {
+                    Text(email == nil ? L10n.newEmail : "编辑邮箱")
+                }
+                Section {
+                    TextField("备注", text: $note, prompt: Text("可选"), axis: .vertical)
+                        .lineLimit(1...4)
+                } footer: {
+                    Text(L10n.notePlaintext).font(.caption).foregroundStyle(.secondary)
+                }
+                Section(L10n.secureNote) {
+                    SecureNoteEditor(
+                        text: $secret,
+                        loaded: $secretLoaded,
+                        hasExisting: email?.hasSecret ?? false,
+                        load: { try email.flatMap { try model.decryptEmailSecret($0.id) } }
+                    )
+                }
             }
+            .formStyle(.grouped)
+            SheetActions(error: error, onCancel: { dismiss() }, onSave: save)
         }
-        .padding(24)
-        .frame(width: 420)
+        .frame(width: 480)
+        .frame(minHeight: 360, idealHeight: 460)
         .onAppear {
             if let email {
                 address = email.address
@@ -104,8 +138,7 @@ struct EmailEditorSheet: View {
                 if secretLoaded { try model.store.setEmailSecret(email.id, secretEnc: secretEnc) }
                 model.selectEmail(email.id)
             } else {
-                let createEnc: Data? = password.isEmpty ? nil : enc
-                let id = try model.store.createEmail(address: address, note: note, passwordEnc: createEnc)
+                let id = try model.store.createEmail(address: address, note: note, passwordEnc: enc)
                 if secretEnc != nil { try model.store.setEmailSecret(id, secretEnc: secretEnc) }
                 model.selectEmail(id)
             }
@@ -142,86 +175,64 @@ struct AccountEditorSheet: View {
     @State private var selectedIndex = 0
     @State private var autoURL = ""
     @State private var error: String?
-    @FocusState private var platformFocused: Bool
 
     private var catalog: [PlatformCatalog.CatalogEntry] { model.platformCatalog() }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(account == nil ? L10n.newService : "编辑服务").font(.headline)
-            TextField("平台名称", text: $platform)
-                .textFieldStyle(.roundedBorder)
-                .focused($platformFocused)
-                .onChange(of: platform) { _, new in
-                    suggestions = PlatformCatalog.matches(query: new, in: catalog)
-                    selectedIndex = 0
-                }
-                .onKeyPress(.downArrow) {
-                    guard !suggestions.isEmpty else { return .ignored }
-                    selectedIndex = (selectedIndex + 1) % suggestions.count
-                    return .handled
-                }
-                .onKeyPress(.upArrow) {
-                    guard !suggestions.isEmpty else { return .ignored }
-                    selectedIndex = (selectedIndex - 1 + suggestions.count) % suggestions.count
-                    return .handled
-                }
-                .onKeyPress(.return) {
-                    guard !suggestions.isEmpty else { return .ignored }
-                    pick(suggestions[selectedIndex])
-                    return .handled
-                }
-                .onKeyPress(.escape) {
+        VStack(spacing: 0) {
+            Form {
+                Section {
+                    platformField
                     if !suggestions.isEmpty {
-                        suggestions = []
-                        return .handled
+                        suggestionList
                     }
-                    return .ignored
+                    Picker("分类", selection: $category) {
+                        Text(L10n.category("ai")).tag("ai")
+                        Text(L10n.category("social")).tag("social")
+                        Text(L10n.category("crypto")).tag("crypto")
+                        Text(L10n.category("other")).tag("other")
+                    }
+                } header: {
+                    Text(account == nil ? L10n.newService : "编辑服务")
                 }
-
-            if !suggestions.isEmpty {
-                suggestionList
+                Section("登录信息") {
+                    TextField(L10n.username, text: $username, prompt: Text("可选"))
+                    PasswordFieldRow(
+                        label: L10n.password,
+                        placeholder: account == nil ? L10n.optionalPassword : L10n.leaveBlankKeep,
+                        password: $password
+                    )
+                    TextField(L10n.url, text: $url, prompt: Text("https://"))
+                }
+                Section {
+                    TextField("备注", text: $note, prompt: Text("可选"), axis: .vertical)
+                        .lineLimit(1...3)
+                } footer: {
+                    Text(L10n.notePlaintext).font(.caption).foregroundStyle(.secondary)
+                }
+                Section(L10n.secureNote) {
+                    SecureNoteEditor(
+                        text: $secret,
+                        loaded: $secretLoaded,
+                        hasExisting: account?.hasSecret ?? false,
+                        load: { try account.flatMap { try model.decryptAccountSecret($0.id) } }
+                    )
+                }
+                Section {
+                    RenewalEditorSection(
+                        enabled: $renewOn,
+                        dueDate: $renewDate,
+                        cycle: $renewCycle,
+                        amount: $renewAmount,
+                        leadDays: $renewLead
+                    )
+                }
             }
-
-            Picker("分类", selection: $category) {
-                Text(L10n.category("ai")).tag("ai")
-                Text(L10n.category("social")).tag("social")
-                Text(L10n.category("crypto")).tag("crypto")
-                Text(L10n.category("other")).tag("other")
-            }
-            TextField(L10n.username, text: $username)
-                .textFieldStyle(.roundedBorder)
-            PasswordFieldRow(
-                placeholder: account == nil ? L10n.optionalPassword : L10n.leaveBlankKeep,
-                password: $password
-            )
-            TextField(L10n.url, text: $url)
-                .textFieldStyle(.roundedBorder)
-            TextField("备注", text: $note)
-                .textFieldStyle(.roundedBorder)
-            Text(L10n.secureNote).font(.subheadline.weight(.medium))
-            SecureNoteEditor(
-                text: $secret,
-                loaded: $secretLoaded,
-                hasExisting: account?.hasSecret ?? false,
-                load: { try account.flatMap { try model.decryptAccountSecret($0.id) } }
-            )
-            RenewalEditorSection(
-                enabled: $renewOn,
-                dueDate: $renewDate,
-                cycle: $renewCycle,
-                amount: $renewAmount,
-                leadDays: $renewLead
-            )
-            if let error { Text(error).foregroundStyle(.red) }
-            HStack {
-                Spacer()
-                Button(L10n.cancel) { dismiss() }
-                Button(L10n.save) { save() }.keyboardShortcut(.defaultAction)
-            }
+            .formStyle(.grouped)
+            SheetActions(error: error, onCancel: { dismiss() }, onSave: save)
         }
-        .padding(24)
         .frame(width: 520)
+        .frame(minHeight: 400, idealHeight: 540)
         .onAppear {
             if let account {
                 platform = account.platform
@@ -239,6 +250,37 @@ struct AccountEditorSheet: View {
                 }
             }
         }
+    }
+
+    private var platformField: some View {
+        TextField("平台名称", text: $platform, prompt: Text("输入会自动补全"))
+            .onChange(of: platform) { _, new in
+                suggestions = PlatformCatalog.matches(query: new, in: catalog)
+                    .filter { $0.name != new }
+                selectedIndex = 0
+            }
+            .onKeyPress(.downArrow) {
+                guard !suggestions.isEmpty else { return .ignored }
+                selectedIndex = (selectedIndex + 1) % suggestions.count
+                return .handled
+            }
+            .onKeyPress(.upArrow) {
+                guard !suggestions.isEmpty else { return .ignored }
+                selectedIndex = (selectedIndex - 1 + suggestions.count) % suggestions.count
+                return .handled
+            }
+            .onKeyPress(.return) {
+                guard !suggestions.isEmpty else { return .ignored }
+                pick(suggestions[selectedIndex])
+                return .handled
+            }
+            .onKeyPress(.escape) {
+                if !suggestions.isEmpty {
+                    suggestions = []
+                    return .handled
+                }
+                return .ignored
+            }
     }
 
     private var suggestionList: some View {
@@ -269,15 +311,14 @@ struct AccountEditorSheet: View {
                             .lineLimit(1)
                     }
                     .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .background(idx == selectedIndex ? Color.accentColor.opacity(0.15) : Color.clear)
+                    .padding(.vertical, 5)
+                    .background(idx == selectedIndex ? Color.accentColor.opacity(0.18) : Color.clear)
+                    .cornerRadius(5)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .background(.quaternary.opacity(0.5))
-        .cornerRadius(6)
     }
 
     private func pick(_ entry: PlatformCatalog.CatalogEntry) {
@@ -322,7 +363,7 @@ struct AccountEditorSheet: View {
                 let id = try model.store.createAccount(
                     emailId: emailId, platform: platform, category: category,
                     username: username, url: url, note: note,
-                    passwordEnc: password.isEmpty ? nil : enc,
+                    passwordEnc: enc,
                     renewal: renewal
                 )
                 if secretEnc != nil { try model.store.setAccountSecret(id, secretEnc: secretEnc) }
@@ -341,13 +382,6 @@ struct SearchResultsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                if let s = model.stats {
-                    HStack(spacing: 12) {
-                        StatCard(title: L10n.emails, value: s.emails, color: .accentColor)
-                        StatCard(title: L10n.services, value: s.accounts, color: .teal)
-                    }
-                }
-
                 if !model.emails.isEmpty {
                     Text("匹配的邮箱（\(model.emails.count)）")
                         .font(.headline)
@@ -390,6 +424,7 @@ struct SearchResultsView: View {
                             Image(systemName: "list.bullet").tag(AppModel.AccountViewMode.list)
                         }
                         .pickerStyle(.segmented)
+                        .labelsHidden()
                         .frame(width: 80)
                     }
                 }

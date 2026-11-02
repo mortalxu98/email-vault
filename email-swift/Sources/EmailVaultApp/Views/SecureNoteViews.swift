@@ -59,11 +59,8 @@ struct SecureNoteEditor: View {
             VStack(alignment: .leading, spacing: 4) {
                 TextEditor(text: $text)
                     .font(.system(.body, design: .monospaced))
-                    .frame(minHeight: 64, maxHeight: 120)
+                    .frame(minHeight: 56, maxHeight: 120)
                     .scrollContentBackground(.hidden)
-                    .padding(4)
-                    .background(.quaternary.opacity(0.4))
-                    .cornerRadius(6)
                 Text("加密保存，适合助记词、恢复码、2FA 密钥。清空即删除。")
                     .font(.caption2)
                     .foregroundStyle(.secondary)

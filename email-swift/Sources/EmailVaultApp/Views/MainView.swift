@@ -12,14 +12,13 @@ struct MainView: View {
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
         } detail: {
             VStack(spacing: 0) {
-                if !model.dueRenewals.isEmpty {
-                    RenewalBanner()
-                }
                 if let email = model.selectedEmail {
+                    if !model.dueRenewals.isEmpty { RenewalBanner() }
                     EmailDetailView(email: email)
                 } else if !model.trimmedQuery.isEmpty {
+                    if !model.dueRenewals.isEmpty { RenewalBanner() }
                     SearchResultsView()
-                } else {
+                } else if model.emails.isEmpty {
                     EmptyStateView(
                         systemImage: "envelope.fill",
                         title: L10n.welcomeTitle,
@@ -27,6 +26,31 @@ struct MainView: View {
                         big: true
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    OverviewView()
+                }
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button {
+                        model.goHome()
+                    } label: {
+                        Label("总览", systemImage: "house")
+                    }
+                    .help("总览")
+                    Menu {
+                        Button("导出备份…") { exportBackup() }
+                        Button("修改主密码…") { model.showChangePassword = true }
+                    } label: {
+                        Label("更多", systemImage: "ellipsis.circle")
+                    }
+                    .help("更多")
+                    Button {
+                        model.lock()
+                    } label: {
+                        Label(L10n.lock, systemImage: "lock")
+                    }
+                    .help("锁定（⌘L）")
                 }
             }
         }
@@ -38,6 +62,19 @@ struct MainView: View {
             model.refresh()
         }
         .idleActivityTracking()
+    }
+
+    private func exportBackup() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "email-vault-backup-\(Renewal.format(Date())).db"
+        panel.allowedContentTypes = [.data]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try model.exportBackup(to: url)
+        } catch {
+            model.errorMessage = error.localizedDescription
+            model.showToast("导出失败")
+        }
     }
 }
 
@@ -103,13 +140,6 @@ struct SidebarView: View {
                 }
                 .listStyle(.sidebar)
             }
-
-            HStack {
-                Button(L10n.exportBackup) { exportBackup() }
-                Spacer()
-                Button(L10n.lock) { model.lock() }
-            }
-            .padding(8)
         }
         .onChange(of: model.focusSearch) { _, v in
             if v {
@@ -143,19 +173,6 @@ struct SidebarView: View {
             }
         } else {
             Color.clear
-        }
-    }
-
-    private func exportBackup() {
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = "email-vault-backup.db"
-        panel.allowedContentTypes = [.data]
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            try model.exportBackup(to: url)
-        } catch {
-            model.errorMessage = error.localizedDescription
-            model.showToast("导出失败")
         }
     }
 }

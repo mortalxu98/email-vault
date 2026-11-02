@@ -14,7 +14,6 @@ struct EmailDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                statsRow
                 header
                 servicesSection
             }
@@ -45,21 +44,6 @@ struct EmailDetailView: View {
         }
         .onChange(of: email.id) { _, _ in
             revealedPassword = nil
-        }
-    }
-
-    private var statsRow: some View {
-        let s = model.stats
-        return HStack(spacing: 12) {
-            StatCard(title: L10n.emails, value: s?.emails ?? 0, color: .accentColor)
-            StatCard(title: L10n.services, value: s?.accounts ?? 0, color: .teal)
-            StatCard(title: L10n.noPassword, value: s?.withoutPassword ?? 0, color: .secondary)
-            ForEach(["ai", "social", "crypto", "other"], id: \.self) { cat in
-                let n = s?.byCategory[cat] ?? 0
-                if n > 0 {
-                    StatCard(title: L10n.category(cat), value: n, color: categoryColor(cat))
-                }
-            }
         }
     }
 
@@ -141,6 +125,7 @@ struct EmailDetailView: View {
                     Image(systemName: "list.bullet").tag(AppModel.AccountViewMode.list)
                 }
                 .pickerStyle(.segmented)
+                .labelsHidden()
                 .frame(width: 80)
                 .help("卡片 / 列表")
                 Button {
@@ -202,7 +187,7 @@ struct StatCard: View {
             Text("\(value)").font(.title2.bold())
         }
         .padding(10)
-        .frame(minWidth: 90, alignment: .leading)
+        .frame(minWidth: 90, maxWidth: .infinity, alignment: .leading)
         .background(.quaternary.opacity(0.4))
         .cornerRadius(10)
     }
