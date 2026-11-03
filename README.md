@@ -5,7 +5,8 @@
 <h1 align="center">Email Vault</h1>
 
 <p align="center">
-  A local-only, offline password vault for macOS that organizes accounts by the email you signed up with — and keeps track of subscription renewals.
+  <b>A local-only, offline password vault for macOS</b><br>
+  Organizes accounts by the email you signed up with — and keeps track of subscription renewals.
 </p>
 
 <p align="center">
@@ -13,10 +14,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml"><img src="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
-  <img src="https://img.shields.io/badge/Swift-5.9%2B-orange" alt="Swift 5.9+">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT"></a>
+  <a href="https://github.com/mortalxu98/email-vault/releases/latest"><img src="https://img.shields.io/github/v/release/mortalxu98/email-vault?style=for-the-badge&logo=github&label=release&color=2ea44f" alt="Latest release"></a>
+  <a href="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/mortalxu98/email-vault/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS 14+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/mortalxu98/email-vault/releases/latest"><img src="https://img.shields.io/badge/Download-DMG-0A84FF?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG" height="40"></a>
+  &nbsp;
+  <a href="#install"><img src="https://img.shields.io/badge/brew%20install-email--vault-FBB040?style=for-the-badge&logo=homebrew&logoColor=black" alt="Homebrew" height="40"></a>
 </p>
 
 <p align="center">
@@ -26,29 +33,56 @@
 
 <p align="center"><sub>Screenshots use demo data.</sub></p>
 
+<p align="center">
+  <sub>Built with</sub><br>
+  <img src="https://img.shields.io/badge/Swift-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift">
+  <img src="https://img.shields.io/badge/SwiftUI-0D96F6?style=flat-square&logo=swift&logoColor=white" alt="SwiftUI">
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite">
+  <img src="https://img.shields.io/badge/Argon2id-4B5563?style=flat-square" alt="Argon2id">
+  <img src="https://img.shields.io/badge/AES--256--GCM-4B5563?style=flat-square" alt="AES-256-GCM">
+  <img src="https://img.shields.io/badge/Secure%20Enclave-4B5563?style=flat-square&logo=apple&logoColor=white" alt="Secure Enclave">
+</p>
+
 ## Features
 
-**Accounts**
-- Emails are grouped by provider (Gmail, Outlook, Proton, iCloud, QQ…); each email lists the platforms registered with it.
-- 70+ built-in platforms (AI, social, crypto…) with autocomplete for name, category and URL, plus brand icons.
-- Card and list views, category filters and global search; right-click to copy a username or password or open the URL.
+<table>
+<tr>
+<td width="50%" valign="top">
 
-**Security**
-- Argon2id key derivation and AES-256-GCM encryption for passwords and secure notes; the key lives only in memory.
-- Secure notes for seed phrases, recovery codes and 2FA secrets, encrypted like passwords.
-- Optional Touch ID unlock backed by the Secure Enclave; the master password is still required every 14 days.
-- Auto-lock after 10 minutes idle and on sleep, screen lock, screensaver or user switch.
-- Copied secrets are marked concealed and cleared after 30 seconds or on lock.
-- Change the master password with a single-transaction re-encryption that rolls back on any failure.
+### 📬 Accounts
 
-**Renewals**
-- Track due date, cycle (one-time, monthly, yearly), amount and how many days ahead to be reminded.
-- Upcoming and overdue renewals show in a banner; "Renewed" moves the date forward one cycle.
+- Emails grouped by provider (Gmail, Outlook, Proton, iCloud, QQ…), each listing the platforms registered with it
+- 70+ built-in platforms (AI, social, crypto…) with autocomplete and brand icons
+- Card and list views, category filters, global search
+- Right-click to copy a username or password, or open the URL
 
-**Data**
-- One SQLite file; schema changes are additive and the database is backed up before every migration.
-- One-click encrypted backup, plus a plain-text CSV export (master password required) for migrating elsewhere.
-- English and Simplified Chinese UI, following the system language.
+### 🔔 Renewals
+
+- Due date, cycle (one-time, monthly, yearly), amount and reminder lead time
+- Upcoming and overdue renewals show in a banner
+- "Renewed" moves the date forward one cycle
+
+</td>
+<td width="50%" valign="top">
+
+### 🔐 Security
+
+- Argon2id + AES-256-GCM for passwords and secure notes; the key lives only in memory
+- Secure notes for seed phrases, recovery codes and 2FA secrets
+- Touch ID via the Secure Enclave; master password still required every 14 days
+- Auto-lock when idle, on sleep, screen lock, screensaver or user switch
+- Copied secrets are concealed and cleared after 30 seconds
+
+### 💾 Data
+
+- One SQLite file; additive-only migrations with automatic backups
+- One-click encrypted backup and CSV export
+- English and Simplified Chinese UI
+- No network, no telemetry, no logs
+
+</td>
+</tr>
+</table>
 
 ## Install
 
@@ -92,6 +126,15 @@ Run `./scripts/build.sh` if you only need the `.app`.
 | Backup, CSV export, change password, Touch ID | Toolbar **…** menu |
 
 ## Security model
+
+```mermaid
+flowchart LR
+    P["🔑 Master password"] -->|"Argon2id<br/>t=3 · 64 MiB · p=4"| K["Vault key<br/>(memory only)"]
+    K -->|"AES-256-GCM"| D[("vault.db<br/>ciphertext")]
+    K -.->|"seal: ECDH + HKDF + AES-GCM"| T["vault.touchid.json"]
+    SE["Secure Enclave key<br/>(bound to fingerprints)"] -.-> T
+    T -.->|"Touch ID unlock"| K
+```
 
 | Data | Stored as |
 |---|---|

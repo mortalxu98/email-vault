@@ -5,7 +5,8 @@
 <h1 align="center">Email Vault</h1>
 
 <p align="center">
-  纯本地、离线运行的 macOS 密码库：按「邮箱 → 注册过的平台」组织账号，并跟踪订阅续费。
+  <b>纯本地、离线运行的 macOS 密码库</b><br>
+  按「邮箱 → 注册过的平台」组织账号，并跟踪订阅续费。
 </p>
 
 <p align="center">
@@ -13,10 +14,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml"><img src="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
-  <img src="https://img.shields.io/badge/Swift-5.9%2B-orange" alt="Swift 5.9+">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT"></a>
+  <a href="https://github.com/mortalxu98/email-vault/releases/latest"><img src="https://img.shields.io/github/v/release/mortalxu98/email-vault?style=for-the-badge&logo=github&label=release&color=2ea44f" alt="最新版本"></a>
+  <a href="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/mortalxu98/email-vault/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS 14+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/mortalxu98/email-vault/releases/latest"><img src="https://img.shields.io/badge/%E4%B8%8B%E8%BD%BD-DMG-0A84FF?style=for-the-badge&logo=apple&logoColor=white" alt="下载 DMG" height="40"></a>
+  &nbsp;
+  <a href="#安装"><img src="https://img.shields.io/badge/brew%20install-email--vault-FBB040?style=for-the-badge&logo=homebrew&logoColor=black" alt="Homebrew" height="40"></a>
 </p>
 
 <p align="center">
@@ -26,29 +33,56 @@
 
 <p align="center"><sub>截图使用演示数据。</sub></p>
 
+<p align="center">
+  <sub>技术栈</sub><br>
+  <img src="https://img.shields.io/badge/Swift-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift">
+  <img src="https://img.shields.io/badge/SwiftUI-0D96F6?style=flat-square&logo=swift&logoColor=white" alt="SwiftUI">
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite">
+  <img src="https://img.shields.io/badge/Argon2id-4B5563?style=flat-square" alt="Argon2id">
+  <img src="https://img.shields.io/badge/AES--256--GCM-4B5563?style=flat-square" alt="AES-256-GCM">
+  <img src="https://img.shields.io/badge/Secure%20Enclave-4B5563?style=flat-square&logo=apple&logoColor=white" alt="Secure Enclave">
+</p>
+
 ## 特性
 
-**账号管理**
-- 邮箱按服务商（Gmail、Outlook、Proton、iCloud、QQ……）分组，每个邮箱下记录它注册过的平台。
-- 内置 70+ 常用平台（AI、社交、加密货币等），输入时自动补全名称、分类和网址，并显示品牌图标。
-- 卡片 / 列表视图、分类筛选、全局搜索；右键快速复制用户名、密码或打开网址。
+<table>
+<tr>
+<td width="50%" valign="top">
 
-**安全**
-- Argon2id 派生主密钥，AES-256-GCM 加密密码与安全备注，密钥只在内存中。
-- 安全备注：加密保存助记词、恢复码、2FA 密钥。
-- 可选 Touch ID 解锁（Secure Enclave，每 14 天仍需输入一次主密码）。
-- 闲置 10 分钟、睡眠、锁屏、屏保、切换用户时自动锁定。
-- 复制的密码标记为 concealed，30 秒后或锁定时自动清除。
-- 修改主密码：单事务重新加密全部数据，失败整体回滚。
+### 📬 账号管理
 
-**续费提醒**
-- 为服务设置到期日、周期（一次性 / 每月 / 每年）、金额和提前提醒天数。
-- 即将到期或已过期的项目在顶部提示，「已续费」自动顺延一个周期。
+- 邮箱按服务商（Gmail、Outlook、Proton、iCloud、QQ……）分组，每个邮箱下记录它注册过的平台
+- 内置 70+ 常用平台（AI、社交、加密货币等），自动补全并显示品牌图标
+- 卡片 / 列表视图、分类筛选、全局搜索
+- 右键快速复制用户名、密码或打开网址
 
-**数据**
-- 单个 SQLite 文件；结构变更只做加列，迁移前自动备份。
-- 一键导出加密备份；需要迁移时可导出明文 CSV（需再次输入主密码）。
-- 界面支持简体中文和英文，跟随系统语言。
+### 🔔 续费提醒
+
+- 到期日、周期（一次性 / 每月 / 每年）、金额、提前提醒天数
+- 即将到期或已过期的项目在顶部提示
+- 「已续费」自动顺延一个周期
+
+</td>
+<td width="50%" valign="top">
+
+### 🔐 安全
+
+- Argon2id + AES-256-GCM 加密密码与安全备注，密钥只在内存中
+- 安全备注：加密保存助记词、恢复码、2FA 密钥
+- Touch ID 解锁（Secure Enclave），每 14 天仍需输入一次主密码
+- 闲置、睡眠、锁屏、屏保、切换用户时自动锁定
+- 复制的密码标记为 concealed，30 秒后自动清除
+
+### 💾 数据
+
+- 单个 SQLite 文件；只加列的迁移，迁移前自动备份
+- 一键导出加密备份或 CSV
+- 界面支持简体中文和英文
+- 不联网、无遥测、不写日志
+
+</td>
+</tr>
+</table>
 
 ## 安装
 
@@ -92,6 +126,15 @@ cd email-vault/email-swift
 | 导出备份 / 导出 CSV / 修改主密码 / Touch ID | 工具栏「…」菜单 |
 
 ## 安全模型
+
+```mermaid
+flowchart LR
+    P["🔑 主密码"] -->|"Argon2id<br/>t=3 · 64 MiB · p=4"| K["保险箱密钥<br/>（只在内存中）"]
+    K -->|"AES-256-GCM"| D[("vault.db<br/>密文")]
+    K -.->|"封装：ECDH + HKDF + AES-GCM"| T["vault.touchid.json"]
+    SE["Secure Enclave 密钥<br/>（绑定当前指纹）"] -.-> T
+    T -.->|"Touch ID 解锁"| K
+```
 
 | 数据 | 存储方式 |
 |---|---|
