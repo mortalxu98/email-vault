@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-03
+
 ### 新增
 
 - 支持通过 Homebrew 安装：`brew install --cask opsfantasy/tap/email-vault`。
@@ -55,6 +57,7 @@
 - 数据库只加列迁移，迁移与修改主密码前自动备份；一键导出备份。
 - 拖拽安装 DMG 与 GitHub Release 发布流程。
 
-[Unreleased]: https://github.com/opsfantasy/email-vault/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/opsfantasy/email-vault/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/opsfantasy/email-vault/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/opsfantasy/email-vault/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/opsfantasy/email-vault/releases/tag/v1.0.0
