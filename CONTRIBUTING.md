@@ -49,4 +49,4 @@ swift test
 ## 发布（维护者）
 
 1. 把 `CHANGELOG.md` 的 `[Unreleased]` 改成新版本号和日期，更新 `email-swift/VERSION`，提交并推送。
-2. `cd email-swift && ./scripts/release.sh --dry-run` 预览，确认后去掉 `--dry-run` 正式发布。脚本会打 tag、上传 DMG，并自动把 [Homebrew tap](https://github.com/mortalxu98/homebrew-tap) 里的 Cask 更新到新版本。
+2. `cd email-swift && ./scripts/release.sh --dry-run` 预览，确认后去掉 `--dry-run` 正式发布。脚本会打 tag、上传 DMG，并自动把 [Homebrew tap](https://github.com/opsfantasy/homebrew-tap) 里的 Cask 更新到新版本。

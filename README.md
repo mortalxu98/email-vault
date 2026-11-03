@@ -14,14 +14,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mortalxu98/email-vault/releases/latest"><img src="https://img.shields.io/github/v/release/mortalxu98/email-vault?style=for-the-badge&logo=github&label=release&color=2ea44f" alt="Latest release"></a>
-  <a href="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/mortalxu98/email-vault/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
+  <a href="https://github.com/opsfantasy/email-vault/releases/latest"><img src="https://img.shields.io/github/v/release/opsfantasy/email-vault?style=for-the-badge&logo=github&label=release&color=2ea44f" alt="Latest release"></a>
+  <a href="https://github.com/opsfantasy/email-vault/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/opsfantasy/email-vault/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS 14+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/mortalxu98/email-vault/releases/latest"><img src="https://img.shields.io/badge/Download-DMG-0A84FF?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG" height="40"></a>
+  <a href="https://github.com/opsfantasy/email-vault/releases/latest"><img src="https://img.shields.io/badge/Download-DMG-0A84FF?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG" height="40"></a>
   &nbsp;
   <a href="#install"><img src="https://img.shields.io/badge/brew%20install-email--vault-FBB040?style=for-the-badge&logo=homebrew&logoColor=black" alt="Homebrew" height="40"></a>
 </p>
@@ -89,12 +89,12 @@
 With [Homebrew](https://brew.sh):
 
 ```bash
-brew tap mortalxu98/tap
-brew trust mortalxu98/tap      # Homebrew 7+ asks you to trust third-party taps
+brew tap opsfantasy/tap
+brew trust opsfantasy/tap      # Homebrew 7+ asks you to trust third-party taps
 brew install --cask email-vault
 ```
 
-Or download the latest `EmailVault-<version>.dmg` from [Releases](https://github.com/mortalxu98/email-vault/releases/latest), open it and drag Email Vault into Applications. Requires macOS 14+ on Apple silicon.
+Or download the latest `EmailVault-<version>.dmg` from [Releases](https://github.com/opsfantasy/email-vault/releases/latest), open it and drag Email Vault into Applications. Requires macOS 14+ on Apple silicon.
 
 The app is not notarized by Apple. On first launch macOS says it can't verify the developer: click **Done**, then go to **System Settings → Privacy & Security** and click **Open Anyway** at the bottom. You only need to do this once.
 
@@ -107,7 +107,7 @@ To upgrade, run `brew upgrade --cask email-vault`, or drag the new version into 
 Requires macOS 14+ and a Swift 5.9+ toolchain (Command Line Tools are enough).
 
 ```bash
-git clone https://github.com/mortalxu98/email-vault.git
+git clone https://github.com/opsfantasy/email-vault.git
 cd email-vault/email-swift
 ./scripts/package-dmg.sh      # writes dist/EmailVault-<version>.dmg
 ```

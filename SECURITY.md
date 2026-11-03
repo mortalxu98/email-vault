@@ -4,7 +4,7 @@ Email Vault 保存的是账号密码，安全问题优先处理。
 
 ## 支持的版本
 
-只有最新发布的版本会收到安全修复。请先升级到 [最新版本](https://github.com/mortalxu98/email-vault/releases/latest) 再确认问题是否存在。
+只有最新发布的版本会收到安全修复。请先升级到 [最新版本](https://github.com/opsfantasy/email-vault/releases/latest) 再确认问题是否存在。
 
 ## 报告漏洞
 

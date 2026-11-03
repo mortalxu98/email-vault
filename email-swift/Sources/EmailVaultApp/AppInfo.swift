@@ -4,9 +4,9 @@ import Foundation
 
 /// App metadata, the About panel and the update check entry point.
 enum AppInfo {
-    static let repositoryURL = URL(string: "https://github.com/mortalxu98/email-vault")!
+    static let repositoryURL = URL(string: "https://github.com/opsfantasy/email-vault")!
     /// The app never touches the network, so checking for updates opens this page in the browser.
-    static let latestReleaseURL = URL(string: "https://github.com/mortalxu98/email-vault/releases/latest")!
+    static let latestReleaseURL = URL(string: "https://github.com/opsfantasy/email-vault/releases/latest")!
 
     static var version: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"

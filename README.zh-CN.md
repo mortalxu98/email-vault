@@ -14,14 +14,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mortalxu98/email-vault/releases/latest"><img src="https://img.shields.io/github/v/release/mortalxu98/email-vault?style=for-the-badge&logo=github&label=release&color=2ea44f" alt="最新版本"></a>
-  <a href="https://github.com/mortalxu98/email-vault/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/mortalxu98/email-vault/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
+  <a href="https://github.com/opsfantasy/email-vault/releases/latest"><img src="https://img.shields.io/github/v/release/opsfantasy/email-vault?style=for-the-badge&logo=github&label=release&color=2ea44f" alt="最新版本"></a>
+  <a href="https://github.com/opsfantasy/email-vault/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/opsfantasy/email-vault/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS 14+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/mortalxu98/email-vault/releases/latest"><img src="https://img.shields.io/badge/%E4%B8%8B%E8%BD%BD-DMG-0A84FF?style=for-the-badge&logo=apple&logoColor=white" alt="下载 DMG" height="40"></a>
+  <a href="https://github.com/opsfantasy/email-vault/releases/latest"><img src="https://img.shields.io/badge/%E4%B8%8B%E8%BD%BD-DMG-0A84FF?style=for-the-badge&logo=apple&logoColor=white" alt="下载 DMG" height="40"></a>
   &nbsp;
   <a href="#安装"><img src="https://img.shields.io/badge/brew%20install-email--vault-FBB040?style=for-the-badge&logo=homebrew&logoColor=black" alt="Homebrew" height="40"></a>
 </p>
@@ -89,12 +89,12 @@
 使用 [Homebrew](https://brew.sh)：
 
 ```bash
-brew tap mortalxu98/tap
-brew trust mortalxu98/tap      # Homebrew 7 起需要先信任第三方 tap
+brew tap opsfantasy/tap
+brew trust opsfantasy/tap      # Homebrew 7 起需要先信任第三方 tap
 brew install --cask email-vault
 ```
 
-或者从 [Releases](https://github.com/mortalxu98/email-vault/releases/latest) 下载最新的 `EmailVault-<版本>.dmg`，双击后把 Email Vault 拖到「应用程序」。要求 macOS 14+，Apple 芯片。
+或者从 [Releases](https://github.com/opsfantasy/email-vault/releases/latest) 下载最新的 `EmailVault-<版本>.dmg`，双击后把 Email Vault 拖到「应用程序」。要求 macOS 14+，Apple 芯片。
 
 本应用未经 Apple 公证。首次打开时系统会提示无法验证开发者：点「完成」，再到 **系统设置 → 隐私与安全性** 底部点「仍要打开」，只需一次。
 
@@ -107,7 +107,7 @@ brew install --cask email-vault
 需要 macOS 14+ 和 Swift 5.9+ 工具链（Command Line Tools 即可）。
 
 ```bash
-git clone https://github.com/mortalxu98/email-vault.git
+git clone https://github.com/opsfantasy/email-vault.git
 cd email-vault/email-swift
 ./scripts/package-dmg.sh      # 输出 dist/EmailVault-<版本>.dmg
 ```

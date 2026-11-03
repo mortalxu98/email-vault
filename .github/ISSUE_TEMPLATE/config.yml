@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: 报告安全漏洞
-    url: https://github.com/mortalxu98/email-vault/security/advisories/new
+    url: https://github.com/opsfantasy/email-vault/security/advisories/new
     about: 安全问题请私下报告，不要开公开 Issue。

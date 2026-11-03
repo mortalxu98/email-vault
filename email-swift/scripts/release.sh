@@ -8,7 +8,7 @@ cd "$ROOT"
 VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
 TAG="v$VERSION"
 DMG="$ROOT/dist/EmailVault-$VERSION.dmg"
-TAP_REPO="mortalxu98/homebrew-tap"
+TAP_REPO="opsfantasy/homebrew-tap"
 CASK_PATH="Casks/email-vault.rb"
 DRY_RUN=0
 UPDATE_TAP=1
@@ -77,7 +77,7 @@ fi
 if [[ -n "$CHANGES" ]]; then
   :
 elif [[ -z "$PREV_TAG" ]]; then
-  CHANGES="首个发布版本：邮箱与平台账号管理、加密安全备注、续费提醒、Touch ID 解锁、修改主密码、自动锁定。完整功能见 [README](https://github.com/mortalxu98/email-vault#readme)。"
+  CHANGES="首个发布版本：邮箱与平台账号管理、加密安全备注、续费提醒、Touch ID 解锁、修改主密码、自动锁定。完整功能见 [README](https://github.com/opsfantasy/email-vault#readme)。"
 else
   FEATS="$(commits_of feat)"
   FIXES="$(commits_of '(fix|perf)')"
