@@ -30,6 +30,8 @@ struct MainView: View {
                     OverviewView()
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .vaultPage()
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button {
@@ -91,11 +93,12 @@ struct MainView: View {
 
 struct SidebarView: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showNewEmail = false
     @FocusState private var searchFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 8) {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
@@ -113,9 +116,8 @@ struct SidebarView: View {
                 }
             }
             .padding(8)
-            .background(.quaternary.opacity(0.5))
-            .cornerRadius(8)
-            .padding([.horizontal, .top], 8)
+            .background(VaultChrome.inset(colorScheme))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             Button {
                 showNewEmail = true
@@ -124,7 +126,6 @@ struct SidebarView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .padding(8)
 
             if grouped.isEmpty {
                 Text(model.trimmedQuery.isEmpty ? tr("还没有邮箱") : tr("没有匹配的邮箱"))
@@ -150,8 +151,14 @@ struct SidebarView: View {
                     }
                 }
                 .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
             }
         }
+        .padding(10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .vaultCard()
+        .padding(8)
+        .vaultPage()
         .onChange(of: model.focusSearch) { _, v in
             if v {
                 searchFocused = true
