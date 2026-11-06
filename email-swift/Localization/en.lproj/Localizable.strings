@@ -75,6 +75,10 @@
 "续费项" = "Renewals";
 "续费" = "Renewals";
 "还没有续费项。编辑服务时打开「续费提醒」即可。" = "No renewals yet. Turn on Renewal Reminder when editing a service.";
+"需要处理" = "Needs attention";
+"需要处理 · %ld" = "Needs attention · %ld";
+"没有需要处理的续费" = "No renewals need attention.";
+"还没有最近修改" = "Nothing edited recently";
 "最近修改" = "Recently Edited";
 "到期日 %@，%@，提前 %ld 天提醒" = "Due %@, %@, reminds %ld days ahead";
 "续费提醒（%ld）" = "Renewals Due (%ld)";
