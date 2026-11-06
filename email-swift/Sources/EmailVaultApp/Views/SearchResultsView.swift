@@ -29,8 +29,7 @@ struct SearchResultsView: View {
                                     .foregroundStyle(.tertiary)
                             }
                             .padding(12)
-                            .background(.quaternary.opacity(0.35))
-                            .cornerRadius(10)
+                            .vaultCard()
                         }
                         .buttonStyle(.plain)
                     }

@@ -22,9 +22,6 @@ struct AccountCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Rectangle()
-                .fill(categoryColor(account.category))
-                .frame(height: 3)
             HStack {
                 AvatarView(text: account.platform, logo: account.logoKey, size: 32)
                 VStack(alignment: .leading, spacing: 2) {
@@ -59,10 +56,8 @@ struct AccountCard: View {
                 RenewalBadge(renewal: renewal)
             }
         }
-        .padding(12)
-        .background(.background)
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(.quaternary, lineWidth: 1))
-        .cornerRadius(10)
+        .padding(14)
+        .vaultCard()
         .onHover { hovering = $0 }
         .modifier(AccountActions(account: account, showEdit: $showEdit, showDelete: $showDelete))
     }
@@ -129,9 +124,6 @@ struct AccountListRow: View {
 
     private var platformColumn: some View {
         HStack(spacing: 8) {
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(categoryColor(account.category))
-                .frame(width: 3)
             AvatarView(text: account.platform, logo: account.logoKey, size: 28)
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
@@ -208,9 +200,7 @@ struct ServicesGrid: View {
                     }
                 }
             }
-            .background(.background)
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(.quaternary, lineWidth: 1))
-            .cornerRadius(10)
+            .vaultCard()
         }
     }
 }

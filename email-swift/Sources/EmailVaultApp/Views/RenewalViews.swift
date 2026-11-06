@@ -64,13 +64,8 @@ struct RenewalBanner: View {
                 }
             }
         }
-        .padding(12)
-        .background(Color.orange.opacity(0.08))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-        )
-        .cornerRadius(10)
+        .padding(14)
+        .vaultCard()
         .padding([.horizontal, .top])
     }
 

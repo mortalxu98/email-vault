@@ -99,12 +99,7 @@ struct EmailDetailView: View {
             .help(tr("更多"))
         }
         .padding(20)
-        .background(.quaternary.opacity(0.35))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-        )
-        .cornerRadius(14)
+        .vaultCard()
     }
 
     private var servicesSection: some View {
@@ -165,26 +160,6 @@ struct EmailDetailView: View {
         }
         .buttonStyle(.bordered)
         .tint(model.categoryFilter == id ? .accentColor : .gray)
-    }
-}
-
-struct StatCard: View {
-    let title: String
-    let value: Int
-    var color: Color = .secondary
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 4) {
-                Circle().fill(color).frame(width: 8, height: 8)
-                Text(title).font(.caption).foregroundStyle(.secondary)
-            }
-            Text("\(value)").font(.title2.bold())
-        }
-        .padding(10)
-        .frame(minWidth: 90, maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.4))
-        .cornerRadius(10)
     }
 }
 
